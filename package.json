@@ -1,0 +1,9 @@
+{
+  "name": "flexibag-inventory-ai-ocr",
+  "version": "1.0.0",
+  "description": "FLEXIBAG Inventory Management System with AI OCR",
+  "main": "flexibag-inventory-ai-ocr.html",
+  "scripts": {
+    "build": "echo 'Static site - ready to deploy'"
+  }
+}
