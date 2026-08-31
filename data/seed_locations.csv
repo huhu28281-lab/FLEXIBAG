@@ -1,0 +1,7 @@
+location_id,location_name,region,lat,lon,reorder_point,target_level,unit_price_usd,lead_time_days,is_active
+PTK,평택,Korea,36.966,126.823,12,26,155,14,1
+DSN,대산,Korea,37.001,126.350,10,22,155,14,1
+GSN,군산,Korea,35.988,126.564,8,18,155,14,1
+ULS,울산,Korea,35.538,129.311,14,30,155,14,1
+ETC,기타(이력전용),Korea,0,0,0,0,155,14,0
+

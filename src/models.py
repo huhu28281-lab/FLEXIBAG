@@ -1,0 +1,23 @@
+INVENTORY_STATUSES = ["IN_STOCK", "USED", "DAMAGED", "LOST"]
+EMAIL_STATUSES = ["RECEIVED", "PARSED", "NEEDS_REVIEW", "CONFIRMED", "IGNORED"]
+SCHEDULE_STATUSES = ["PENDING_CONFIRMATION", "CONFIRMED", "CANCELLED", "COMPLETED"]
+WORK_ORDER_STATUSES = ["OPEN", "IN_PROGRESS", "COMPLETED", "CANCELLED"]
+
+LOCATION_NAMES = {
+    "PTK": "평택",
+    "DSN": "대산",
+    "GSN": "군산",
+    "ULS": "울산",
+}
+
+LOCATION_ALIASES = {
+    "PYEONGTAEK": "PTK",
+    "평택": "PTK",
+    "DAESAN": "DSN",
+    "대산": "DSN",
+    "GUNSAN": "GSN",
+    "군산": "GSN",
+    "ULSAN": "ULS",
+    "울산": "ULS",
+}
+

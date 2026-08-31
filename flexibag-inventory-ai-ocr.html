@@ -1,0 +1,3995 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FLEXI BAG INVENTORY</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    :root {
+      --bg: #0f172a;
+      --bg-2: #111827;
+      --surface: #ffffff;
+      --surface-2: #f6f8fb;
+      --surface-3: #eef6ff;
+      --line: #d8e0ea;
+      --line-strong: #b9c7d8;
+      --text: #111827;
+      --muted: #64748b;
+      --sidebar-text: #dbeafe;
+      --sidebar-muted: #93a4bb;
+      --accent: #38bdf8;
+      --accent-2: #e0f2fe;
+      --accent-3: #075985;
+      --warn: #b45309;
+      --warn-bg: #fff7ed;
+      --danger: #b42318;
+      --danger-bg: #fee4e2;
+      --ok: #047857;
+      --ok-bg: #dcfce7;
+      --info: #0369a1;
+      --info-bg: #e0f2fe;
+      --shadow: 0 16px 38px rgba(15, 23, 42, 0.12);
+      --mono: "Malgun Gothic", "맑은 고딕", "Segoe UI", sans-serif;
+      --sans: "Malgun Gothic", "맑은 고딕", "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    button, input, select, textarea {
+      font-family: var(--sans);
+      font-weight: 700;
+    }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      font-weight: 700;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 24% -10%, rgba(56, 189, 248, 0.16), transparent 30%),
+        linear-gradient(135deg, #0f172a 0%, #1e293b 38%, #eef4fb 38%, #f8fafc 100%);
+      letter-spacing: 0;
+      min-height: 100vh;
+    }
+
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      z-index: 10;
+      width: 292px;
+      background:
+        linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.98)),
+        var(--bg);
+      border-right: 1px solid rgba(148, 163, 184, 0.26);
+      box-shadow: 14px 0 40px rgba(15, 23, 42, 0.28);
+    }
+
+    .topbar {
+      height: 100%;
+      padding: 22px 18px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 12px;
+    }
+
+    .brand-row {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: stretch;
+      gap: 16px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      color: #f8fafc;
+      font-size: 21px;
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+    }
+
+    .brand p {
+      margin: 8px 0 0;
+      color: var(--sidebar-muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .header-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      justify-content: flex-start;
+      align-items: stretch;
+    }
+
+    .tabs {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow-x: visible;
+      overflow-y: auto;
+      padding: 4px 0 12px;
+    }
+
+    .tab {
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--sidebar-text);
+      padding: 11px 12px;
+      border-radius: 8px;
+      font-weight: 700;
+      white-space: nowrap;
+      cursor: pointer;
+      text-align: left;
+      transition: 0.16s ease;
+    }
+
+    .tab.active {
+      color: #ffffff;
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.26), rgba(59, 130, 246, 0.18));
+      border-color: rgba(125, 211, 252, 0.72);
+      box-shadow: inset 3px 0 0 var(--accent), 0 10px 22px rgba(14, 165, 233, 0.12);
+    }
+
+    .tab:hover {
+      border-color: rgba(125, 211, 252, 0.5);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .tab-group-label {
+      margin: 10px 4px 2px;
+      color: var(--sidebar-muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .tab-group-label:first-child {
+      margin-top: 0;
+    }
+
+    #locationMap {
+      height: 360px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+    }
+
+    .map-qty-label {
+      font-family: var(--mono);
+      font-weight: 800;
+      font-size: 12px;
+      color: #0f172a;
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px solid var(--line-strong);
+      border-radius: 6px;
+      padding: 1px 6px;
+      transform: translate(-50%, -135%);
+      white-space: nowrap;
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.18);
+    }
+
+    main {
+      max-width: 1520px;
+      margin: 0 0 0 292px;
+      padding: 28px 28px 56px;
+    }
+
+    .view { display: none; }
+    .view.active { display: block; }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .toolbar h2 {
+      margin: 0 0 4px;
+      font-size: 22px;
+      letter-spacing: -0.01em;
+    }
+
+    .toolbar p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .control-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .kpi-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin-bottom: 16px;
+    }
+
+    .location-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin-bottom: 16px;
+    }
+
+    .two-col {
+      grid-template-columns: minmax(0, 1.1fr) minmax(360px, 0.9fr);
+      align-items: start;
+    }
+
+    .card {
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 251, 255, 0.98));
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .card.tight {
+      padding: 14px;
+      background:
+        linear-gradient(145deg, rgba(255, 255, 255, 1), rgba(239, 248, 255, 0.72));
+    }
+
+    .kpi-label {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .kpi-value {
+      margin-top: 8px;
+      font-size: 26px;
+      line-height: 1;
+      font-weight: 800;
+      font-family: var(--mono);
+      color: #0f172a;
+    }
+
+    .kpi-sub {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .location-card h3 {
+      margin: 0 0 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      font-size: 17px;
+    }
+
+    .metric-pair {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 10px 0;
+    }
+
+    .mini-metric {
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, #ffffff, var(--surface-2));
+      border-radius: 8px;
+      padding: 10px;
+    }
+
+    .mini-metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .mini-metric strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 18px;
+      font-family: var(--mono);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: 12px;
+      font-weight: 800;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+
+    .badge.ok { color: var(--ok); background: var(--ok-bg); border-color: #a6f4c5; }
+    .badge.warn { color: var(--warn); background: var(--warn-bg); border-color: #f3d889; }
+    .badge.danger { color: var(--danger); background: var(--danger-bg); border-color: #fda29b; }
+    .badge.info { color: var(--info); background: var(--info-bg); border-color: #b2ccff; }
+    .badge.neutral { color: #344054; background: #f2f4f7; border-color: #d0d5dd; }
+
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 780px;
+    }
+
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      font-size: 13px;
+      vertical-align: top;
+    }
+
+    th {
+      background: linear-gradient(180deg, #eaf3fb, #dde8f3);
+      color: #334155;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    td:first-child,
+    td:nth-child(2),
+    .result-box,
+    input[type="date"],
+    select {
+      font-family: var(--mono);
+    }
+
+    tr:last-child td { border-bottom: 0; }
+
+    label {
+      display: grid;
+      gap: 6px;
+      color: #334155;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    header label {
+      color: var(--sidebar-muted);
+    }
+
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      padding: 10px 11px;
+      font: inherit;
+      min-height: 40px;
+      box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+
+    header input,
+    header select {
+      color: #e2e8f0;
+      background: rgba(15, 23, 42, 0.5);
+      border-color: rgba(148, 163, 184, 0.34);
+    }
+
+    textarea {
+      min-height: 180px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      min-height: 40px;
+      padding: 9px 13px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: 0.16s ease;
+    }
+
+    button.primary {
+      background: linear-gradient(135deg, #0284c7, #38bdf8);
+      color: #fff;
+      border-color: #0284c7;
+      box-shadow: 0 10px 18px rgba(2, 132, 199, 0.2);
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      border-color: var(--line-strong);
+    }
+
+    header button {
+      background: rgba(15, 23, 42, 0.42);
+      color: #e2e8f0;
+      border-color: rgba(148, 163, 184, 0.32);
+    }
+
+    button.warn {
+      background: var(--warn-bg);
+      color: var(--warn);
+      border-color: #f3d889;
+    }
+
+    button.danger {
+      background: var(--danger-bg);
+      color: var(--danger);
+      border-color: #fda29b;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .span-3 { grid-column: span 3; }
+
+    .notice {
+      padding: 12px;
+      border-radius: 8px;
+      background: var(--info-bg);
+      color: #1849a9;
+      border: 1px solid #b2ccff;
+      font-size: 13px;
+      line-height: 1.5;
+      margin-bottom: 14px;
+    }
+
+    .notice.warn {
+      background: var(--warn-bg);
+      color: var(--warn);
+      border-color: #f3d889;
+    }
+
+    .notice.ok {
+      background: var(--ok-bg);
+      color: var(--ok);
+      border-color: #a6f4c5;
+    }
+
+    .timeline {
+      display: grid;
+      gap: 10px;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      gap: 10px;
+      align-items: start;
+    }
+
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: var(--accent-2);
+      color: var(--accent);
+      font-weight: 900;
+      font-size: 13px;
+    }
+
+    .step strong {
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .step span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .chart {
+      height: 220px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(239, 248, 255, 0.86)),
+        repeating-linear-gradient(0deg, transparent, transparent 26px, rgba(148, 163, 184, 0.12) 27px);
+      padding: 12px;
+      overflow: hidden;
+    }
+
+    .yard-alert {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 16px;
+      padding: 12px 14px;
+      border: 1px solid rgba(125, 211, 252, 0.42);
+      border-radius: 8px;
+      background: linear-gradient(135deg, #0f172a, #1e3a5f);
+      color: #e0f2fe;
+      box-shadow: 0 12px 26px rgba(15, 23, 42, 0.2);
+    }
+
+    .yard-alert strong {
+      color: #ffffff;
+    }
+
+    .yard-alert .pulse {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.7);
+      animation: pulse 1.6s infinite;
+      flex: 0 0 auto;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.62); }
+      70% { box-shadow: 0 0 0 10px rgba(56, 189, 248, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); }
+    }
+
+    .drop-zone {
+      border: 1px dashed #7dd3fc;
+      border-radius: 8px;
+      padding: 18px;
+      background: linear-gradient(135deg, #f0f9ff, #ffffff);
+      color: #075985;
+      font-weight: 800;
+      text-align: center;
+      margin-bottom: 12px;
+      display: grid;
+      gap: 6px;
+      cursor: pointer;
+      transition: 0.16s ease;
+    }
+
+    .drop-zone:hover,
+    .drop-zone.active {
+      border-color: #0284c7;
+      background: linear-gradient(135deg, #e0f2fe, #ffffff);
+      transform: translateY(-1px);
+    }
+
+    .drop-zone strong {
+      display: block;
+      color: #0f172a;
+      font-size: 16px;
+    }
+
+    .drop-zone small {
+      color: var(--muted);
+      font-weight: 700;
+      line-height: 1.45;
+    }
+
+    .drop-eyebrow {
+      color: #0284c7;
+      font-size: 11px;
+      font-family: var(--mono);
+      letter-spacing: 0.06em;
+    }
+
+    .hidden-input {
+      display: none;
+    }
+
+    .photo-preview {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 12px;
+      background: #ffffff;
+    }
+
+    .photo-preview.empty {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+    }
+
+    .photo-preview img {
+      width: 96px;
+      height: 96px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: #f8fafc;
+    }
+
+    .photo-preview-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 10px;
+    }
+
+    .photo-card {
+      display: grid;
+      grid-template-columns: 58px 1fr;
+      gap: 9px;
+      align-items: center;
+      width: 100%;
+      text-align: left;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      min-height: 78px;
+    }
+
+    .photo-card.active {
+      border-color: #0284c7;
+      background: #f0f9ff;
+      box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.12);
+    }
+
+    .photo-card img {
+      width: 58px;
+      height: 58px;
+      border-radius: 7px;
+    }
+
+    .photo-card-text {
+      display: grid;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .photo-card-text strong,
+    .photo-card-text span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .photo-card-text strong {
+      color: #0f172a;
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+
+    .photo-card-text span,
+    .photo-card-text em {
+      color: var(--muted);
+      font-size: 11px;
+      font-style: normal;
+    }
+
+    .photo-card-text em {
+      color: #0369a1;
+      font-family: var(--mono);
+      font-weight: 800;
+    }
+
+    .photo-meta {
+      display: grid;
+      gap: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .photo-meta strong {
+      color: #0f172a;
+      font-family: var(--mono);
+      word-break: break-all;
+    }
+
+    .chart svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .empty {
+      color: var(--muted);
+      font-size: 13px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .result-box {
+      border: 1px solid var(--line);
+      background: #f8fafb;
+      border-radius: 8px;
+      padding: 12px;
+      font-family: var(--sans);
+      font-weight: 700;
+      font-size: 12px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    @media (max-width: 1100px) {
+      .kpi-grid, .location-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .two-col { grid-template-columns: 1fr; }
+      header {
+        position: sticky;
+        width: auto;
+        height: auto;
+        bottom: auto;
+        border-right: 0;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.26);
+      }
+      .topbar {
+        height: auto;
+        grid-template-rows: auto;
+      }
+      .tabs {
+        flex-direction: row;
+        overflow-x: auto;
+      }
+      main {
+        margin: 0;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .topbar, main { padding-left: 14px; padding-right: 14px; }
+      .brand-row, .toolbar { align-items: stretch; flex-direction: column; }
+      .header-actions { justify-content: flex-start; }
+      .kpi-grid, .location-grid, .form-grid, .metric-pair { grid-template-columns: 1fr; }
+      .span-3 { grid-column: span 1; }
+      .kpi-value { font-size: 22px; }
+      table { min-width: 660px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="topbar">
+      <div class="brand-row">
+        <div class="brand">
+          <h1>FLEXI BAG INVENTORY</h1>
+          <p>메일은 예정 일정, 사진 확인은 실제 USED, 시리얼 원장은 실제 재고의 단일 기준</p>
+        </div>
+        <div class="header-actions">
+          <label>
+            기준일
+            <input id="targetDate" type="date" value="2026-06-26" />
+          </label>
+          <button id="resetDemo" class="danger">데모 초기화</button>
+        </div>
+      </div>
+      <nav class="tabs" aria-label="화면 선택">
+        <button class="tab active" data-view="dashboard">Dashboard 대시보드</button>
+
+        <div class="tab-group-label">① 작업 접수</div>
+        <button class="tab" data-view="liveEmail">실시간 메일 수신</button>
+        <button class="tab" data-view="email">메일 직접 입력</button>
+        <button class="tab" data-view="schedule">설치 작업 일정</button>
+
+        <div class="tab-group-label">② 현장 처리</div>
+        <button class="tab" data-view="ocr">사진 OCR 확인</button>
+
+        <div class="tab-group-label">③ 재고 현황</div>
+        <button class="tab" data-view="allList">전체 FLEXI BAG LIST</button>
+        <button class="tab" data-view="ledger">재고 원장 검색</button>
+        <button class="tab" data-view="materials">부자재 수량</button>
+
+        <div class="tab-group-label">④ 관리</div>
+        <button class="tab" data-view="audit">경보 및 처리 이력</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section id="dashboard" class="view active">
+      <div class="toolbar">
+        <div>
+          <h2>대시보드</h2>
+          <p>거점별 실제 재고와 확정 일정 기준 예상 재고를 분리해서 보여줍니다.</p>
+        </div>
+      </div>
+      <div id="yardAlert" class="yard-alert"></div>
+      <div id="kpiGrid" class="grid kpi-grid"></div>
+      <div id="locationGrid" class="grid location-grid"></div>
+      <div class="card" style="margin-bottom: 16px;">
+        <div class="toolbar">
+          <div>
+            <h2>거점별 재고 지도</h2>
+            <p>지도 위 원의 색은 재주문 상태, 숫자는 현재 실제 재고(EA)입니다.</p>
+          </div>
+        </div>
+        <div id="locationMap"></div>
+      </div>
+      <div class="grid two-col">
+        <div class="card">
+          <div class="toolbar">
+            <div>
+              <h2 id="projectionTitle">30일 예상 재고</h2>
+              <p>확정 일정(실선)과 과거 사용 추세 예측(점선)을 함께 보여줍니다.</p>
+            </div>
+            <div class="control-row" style="gap: 8px;">
+              <select id="projectionDays">
+                <option value="30" selected>30일</option>
+                <option value="60">60일</option>
+                <option value="90">90일</option>
+              </select>
+              <select id="projectionLocation"></select>
+            </div>
+          </div>
+          <div id="projectionSummary" class="kpi-grid" style="margin-bottom: 12px;"></div>
+          <div id="projectionChart" class="chart"></div>
+          <div class="control-row" style="gap: 8px; margin: 12px 0 6px;">
+            <input id="projectionTableSearch" placeholder="날짜 검색 (예: 07-03)" style="flex: 1;" />
+            <select id="projectionTableLimit">
+              <option value="7" selected>7일</option>
+              <option value="14">14일</option>
+              <option value="30">30일</option>
+              <option value="0">전체</option>
+            </select>
+          </div>
+          <div id="projectionTable" class="table-wrap"></div>
+        </div>
+        <div class="card">
+          <h2>시연 흐름</h2>
+          <div class="timeline">
+            <div class="step"><div class="step-num">1</div><div><strong>메일 파싱 (정규식 + AI)</strong><span>운송사 작업 요청 메일에서 BKG, 작업일, POL/POD, 수량을 추출합니다. 정규식이 1차로 뽑고, 놓친 필드는 LLM이 보완합니다.</span></div></div>
+            <div class="step"><div class="step-num">2</div><div><strong>일정 확정</strong><span>PENDING_CONFIRMATION 일정을 운영자가 확인해 CONFIRMED로 바꿉니다.</span></div></div>
+            <div class="step"><div class="step-num">3</div><div><strong>예상 재고</strong><span>CONFIRMED 일정만 미래 예상 재고와 재주문 판단에 반영합니다.</span></div></div>
+            <div class="step"><div class="step-num">4</div><div><strong>사진 확인</strong><span>OCR 후보를 사람이 confirmed_serial로 확정한 뒤에만 실제 USED 처리합니다.</span></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="email" class="view">
+      <div class="toolbar">
+        <div>
+          <h2>메일 직접 입력</h2>
+          <p>메일 제목과 본문을 직접 붙여넣거나 파일로 올려 설치 예정 일정을 추출하고 PENDING 상태로 저장합니다.</p>
+        </div>
+        <button id="loadSampleEmail">샘플 메일 불러오기</button>
+      </div>
+      <div class="grid two-col">
+        <div class="card">
+          <label id="emailDropZone" class="drop-zone" for="emailUpload">
+            <input id="emailUpload" class="hidden-input" type="file" accept=".eml,.txt,.html,.htm,message/rfc822,text/plain" />
+            <span class="drop-eyebrow">ORDER MAIL UPLOAD</span>
+            <strong>메일 파일 선택 또는 드롭</strong>
+            <small>.eml / .txt / .html 파일을 읽어 제목과 본문을 자동으로 채웁니다. (Outlook은 "다른 이름으로 저장 → .eml" 또는 텍스트 저장) 불러온 뒤 메일 파싱을 실행하세요.</small>
+          </label>
+          <div id="emailFileInfo" class="notice" style="display: none;"></div>
+          <div class="form-grid">
+            <label class="span-3">메일 제목
+              <input id="emailSubject" />
+            </label>
+            <label class="span-3">메일 본문
+              <textarea id="emailBody"></textarea>
+            </label>
+          </div>
+          <div class="control-row" style="margin-top: 12px;">
+            <button id="parseEmail" class="primary">메일 파싱</button>
+            <button id="savePending" disabled>PENDING 일정으로 저장</button>
+          </div>
+          <label style="display:flex; align-items:flex-start; gap:8px; margin-top:10px; font-size:13px; color: var(--muted); cursor:pointer;">
+            <input type="checkbox" id="useAiParse" checked style="width:auto; margin-top:2px;" />
+            <span>AI 보조 파싱 (정규식이 비워둔 필드를 Claude가 보완) · AI 서버에 ANTHROPIC_API_KEY가 설정돼 있을 때만 동작하며, 실패하면 정규식 결과를 그대로 유지합니다.</span>
+          </label>
+        </div>
+        <div class="card">
+          <h2>파싱 결과</h2>
+          <div id="parseNotice" class="notice">샘플 메일을 불러오거나 메일 내용을 붙여넣은 뒤 파싱하세요.</div>
+          <div id="parseResult" class="result-box">{}</div>
+        </div>
+      </div>
+      <div class="card" style="margin-top: 14px;">
+        <div class="toolbar">
+          <div>
+            <h2>메일 수신 처리 로직</h2>
+            <p>실제 운영에서는 전용 메일함으로 들어온 작업 요청을 먼저 수신 로그로 저장하고, 검증 후 일정 후보로 만듭니다.</p>
+          </div>
+        </div>
+        <div class="grid two-col">
+          <div>
+            <div class="timeline">
+              <div class="step"><div class="step-num">1</div><div><strong>전용 메일함 수신</strong><span>운송사/설치업체 메일 발송 시 `flexibag.schedule@company.com`을 CC에 추가합니다. MVP는 붙여넣기, 운영은 IMAP 또는 Gmail API로 수신합니다.</span></div></div>
+              <div class="step"><div class="step-num">2</div><div><strong>원문 저장</strong><span>Message-ID, 수신시간, 발신자, 제목, 본문, 첨부파일명을 `email_intake`에 `RECEIVED`로 저장합니다.</span></div></div>
+              <div class="step"><div class="step-num">3</div><div><strong>작업 메일 판정</strong><span>BKG, CNTR, POL, POD, FLEXI BAG, 핏팅, 운송 키워드가 있으면 작업 요청 후보로 보고, 광고/회신 잡음은 제외합니다.</span></div></div>
+              <div class="step"><div class="step-num">4</div><div><strong>중복 방지</strong><span>Message-ID가 같거나 BKG+작업일+수량이 같은 메일은 중복 후보로 묶어 기존 일정과 비교합니다.</span></div></div>
+              <div class="step"><div class="step-num">5</div><div><strong>필드 추출 (하이브리드)</strong><span>정규식으로 작업일, BKG, PO, POL/POD, 품명, 컨테이너 타입, 수량, 22KL/24KL/25KL 사이즈를 1차 파싱하고, 빈 필드는 LLM이 보완해 자유 형식·오타 메일도 처리합니다.</span></div></div>
+              <div class="step"><div class="step-num">6</div><div><strong>일정 후보 생성</strong><span>필수값이 충분하면 `PARSED`, 부족하면 `NEEDS_REVIEW`로 표시하고, 설치 일정은 항상 `PENDING_CONFIRMATION`으로 생성합니다.</span></div></div>
+              <div class="step"><div class="step-num">7</div><div><strong>운영자 확정</strong><span>운영자가 화면에서 확인하면 `CONFIRMED`가 되고 예상 재고에만 반영됩니다. 실제 재고는 사진 OCR 확정 전까지 차감하지 않습니다.</span></div></div>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>단계</th><th>상태</th><th>처리 기준</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>수신</td><td><span class="badge info">RECEIVED</span></td><td>메일 원문과 메타데이터만 저장</td></tr>
+                <tr><td>파싱 성공</td><td><span class="badge ok">PARSED</span></td><td>작업일, BKG, 거점, 수량 추출 완료</td></tr>
+                <tr><td>검토 필요</td><td><span class="badge warn">NEEDS_REVIEW</span></td><td>필수값 누락, 날짜 충돌, 낮은 신뢰도</td></tr>
+                <tr><td>일정 후보</td><td><span class="badge warn">PENDING_CONFIRMATION</span></td><td>운영자 확인 전, 예상 재고 미반영</td></tr>
+                <tr><td>일정 확정</td><td><span class="badge ok">CONFIRMED</span></td><td>예상 재고 반영, 실제 재고 차감 없음</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="liveEmail" class="view">
+      <div class="toolbar">
+        <div>
+          <h2>실시간 메일 수신</h2>
+          <p>Gmail 전용 메일함을 주기적으로 확인하고, 새 작업 메일을 자동으로 PENDING_CONFIRMATION 일정으로 가져옵니다.</p>
+        </div>
+        <div class="control-row">
+          <button id="syncLiveEmail" class="primary">지금 메일 확인</button>
+          <button id="openFullDemoFromLive">전체 화면으로 돌아가기</button>
+        </div>
+      </div>
+      <div id="liveEmailNotice" class="notice">실시간 수신 서버 상태를 확인하는 중입니다.</div>
+      <div id="liveEmailKpis" class="grid kpi-grid"></div>
+      <div class="grid two-col">
+        <div class="card">
+          <div class="toolbar">
+            <div>
+              <h2>DB 설치 일정</h2>
+              <p>Gmail 수신 후 실제 DB에 저장된 일정입니다. 전체 앱의 Installation Schedule에도 자동 병합됩니다.</p>
+            </div>
+          </div>
+          <div id="liveScheduleTable" class="table-wrap"></div>
+        </div>
+        <div class="card">
+          <div class="toolbar">
+            <div>
+              <h2>최근 수신 메일</h2>
+              <p>email_intake에 저장된 최근 메일 로그입니다.</p>
+            </div>
+          </div>
+          <div id="liveEmailTable" class="table-wrap"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="schedule" class="view">
+      <div class="toolbar">
+        <div>
+          <h2>설치 작업 일정</h2>
+          <p>일정 확정은 예상 재고에만 반영됩니다. 실제 시리얼 재고는 여기서 차감하지 않습니다.</p>
+        </div>
+        <div class="control-row">
+          <label>확정자
+            <input id="confirmUser" value="operator" />
+          </label>
+          <button id="confirmSelectedSchedule" class="primary">선택 일정 확정</button>
+        </div>
+      </div>
+      <div id="scheduleEditPanel" class="card" style="display: none; margin-bottom: 14px;">
+        <div class="toolbar">
+          <div>
+            <h2>일정 수기 정정</h2>
+            <p>메일로 들어온 일정이 변경되면 여기서 작업일, 거점, 수량, 상태를 직접 수정합니다.</p>
+          </div>
+          <button id="cancelScheduleEdit">정정 취소</button>
+        </div>
+        <div class="form-grid">
+          <label>schedule id
+            <input id="editScheduleId" readonly />
+          </label>
+          <label>work date
+            <input id="editWorkDate" type="date" />
+          </label>
+          <label>BKG
+            <input id="editBkgNo" />
+          </label>
+          <label>location
+            <select id="editScheduleLocation"></select>
+          </label>
+          <label>POL
+            <input id="editPol" />
+          </label>
+          <label>POD
+            <input id="editPod" />
+          </label>
+          <label>item
+            <input id="editItem" />
+          </label>
+          <label>FLEXI BAG size
+            <select id="editFlexibagSize"></select>
+          </label>
+          <label>qty
+            <input id="editFlexibagQty" type="number" min="0" step="1" />
+          </label>
+          <label>status
+            <select id="editScheduleStatus">
+              <option>PENDING_CONFIRMATION</option>
+              <option>CONFIRMED</option>
+              <option>NEEDS_REVIEW</option>
+              <option>CANCELLED</option>
+            </select>
+          </label>
+          <label class="span-3">정정 메모
+            <input id="editScheduleNote" placeholder="변경 사유 또는 확인 메모" />
+          </label>
+        </div>
+        <div class="control-row" style="margin-top: 12px;">
+          <button id="saveScheduleEdit" class="primary">정정 저장</button>
+        </div>
+      </div>
+      <div id="scheduleTable" class="table-wrap"></div>
+    </section>
+
+    <section id="ledger" class="view">
+      <div class="toolbar">
+        <div>
+          <h2>재고 원장 검색</h2>
+          <p>시리얼 번호로 검색하고, 상태·거점·사이즈로 필터링해 확인합니다.</p>
+        </div>
+        <div class="control-row">
+          <label>거점
+            <select id="ledgerLocation"></select>
+          </label>
+          <label>상태
+            <select id="ledgerStatus">
+              <option value="">전체</option>
+              <option>IN_STOCK</option>
+              <option>USED</option>
+              <option>DAMAGED</option>
+              <option>LOST</option>
+            </select>
+          </label>
+          <label>사이즈
+            <select id="ledgerSize"></select>
+          </label>
+          <label>시리얼 검색
+            <input id="ledgerSearch" placeholder="240126..." />
+          </label>
+        </div>
+      </div>
+      <div id="ledgerTable" class="table-wrap"></div>
+    </section>
+
+    <section id="materials" class="view">
+      <div class="toolbar">
+        <div>
+          <h2>FLEXI BAG 부자재 수량</h2>
+          <p>FLEXI BAG 본품 시리얼 재고와 분리해서 부자재의 보관 위치, 수량, 상태를 관리합니다.</p>
+        </div>
+        <div class="control-row">
+          <label>거점
+            <select id="materialFilterLocation"></select>
+          </label>
+          <label>분류
+            <select id="materialFilterCategory"></select>
+          </label>
+          <label>상태
+            <select id="materialFilterStatus">
+              <option value="">전체</option>
+              <option>AVAILABLE</option>
+              <option>RESERVED</option>
+              <option>QUARANTINE</option>
+              <option>CONSUMED</option>
+              <option>LOST</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div id="materialKpiGrid" class="grid kpi-grid"></div>
+      <div class="grid two-col">
+        <div class="card">
+          <h2>부자재 등록 / 정정</h2>
+          <div class="form-grid">
+            <label>관리번호
+              <input id="materialId" placeholder="자동 생성" />
+            </label>
+            <label>부자재명
+              <input id="materialName" placeholder="예: 3 inch Valve BLBD" />
+            </label>
+            <label>분류
+              <input id="materialCategory" placeholder="Valve / Adapter / Tool" />
+            </label>
+            <label>보관 거점
+              <select id="materialLocation"></select>
+            </label>
+            <label>보관 위치
+              <input id="materialStorage" placeholder="예: ULS Rack A-03" />
+            </label>
+            <label>현재 수량
+              <input id="materialQty" type="number" min="0" step="1" value="0" />
+            </label>
+            <label>단위
+              <input id="materialUnit" value="EA" />
+            </label>
+            <label>상태
+              <select id="materialStatus">
+                <option>AVAILABLE</option>
+                <option>RESERVED</option>
+                <option>QUARANTINE</option>
+                <option>CONSUMED</option>
+                <option>LOST</option>
+              </select>
+            </label>
+            <label>확인자
+              <input id="materialBy" value="operator" />
+            </label>
+            <label class="span-3">메모
+              <input id="materialNote" placeholder="예외 보관 사유, 품질 상태, 사용 예정 등" />
+            </label>
+          </div>
+          <div class="control-row" style="margin-top: 12px;">
+            <button id="saveMaterial" class="primary">부자재 저장</button>
+            <button id="newMaterial">신규 입력</button>
+          </div>
+          <h2 style="margin-top: 18px;">입출고 / 수량 조정</h2>
+          <div class="form-grid">
+            <label>구분
+              <select id="materialMoveType">
+                <option value="IN">입고</option>
+                <option value="OUT">출고/사용</option>
+                <option value="ADJUST">실사 정정</option>
+              </select>
+            </label>
+            <label>수량
+              <input id="materialMoveQty" type="number" min="0" step="1" value="1" />
+            </label>
+            <label>이력 메모
+              <input id="materialMoveNote" placeholder="작업 오더, 반출 사유, 실사 메모" />
+            </label>
+          </div>
+          <div class="control-row" style="margin-top: 12px;">
+            <button id="applyMaterialMovement" class="primary">입출고 반영</button>
+          </div>
+        </div>
+        <div class="card">
+          <h2>부자재 원장</h2>
+          <div id="materialTable" class="table-wrap"></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top: 14px;">
+        <h2>부자재 입출고 이력</h2>
+        <div id="materialEventTable" class="table-wrap"></div>
+      </div>
+    </section>
+
+    <section id="allList" class="view">
+      <div class="toolbar">
+        <div>
+          <h2>전체 FLEXI BAG LIST</h2>
+          <p>22KL, 24KL, 25KL 전체 타입을 시리얼별·지역별로 확인합니다.</p>
+        </div>
+        <div class="control-row">
+          <label>사이즈
+            <select id="allListSize"></select>
+          </label>
+          <label>지역
+            <select id="allListLocation"></select>
+          </label>
+          <label>상태
+            <select id="allListStatus">
+              <option value="">전체</option>
+              <option>IN_STOCK</option>
+              <option>USED</option>
+              <option>DAMAGED</option>
+              <option>LOST</option>
+            </select>
+          </label>
+          <button id="exportAllListCsv" class="primary">CSV 내보내기</button>
+        </div>
+      </div>
+      <div id="sizeGrid" class="grid kpi-grid"></div>
+      <div class="grid two-col">
+        <div class="card">
+          <h2>지역별 재고 LIST</h2>
+          <div id="regionListTable" class="table-wrap"></div>
+        </div>
+        <div class="card">
+          <h2>시리얼별 전체 LIST</h2>
+          <div id="allSerialTable" class="table-wrap"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="ocr" class="view">
+      <div class="toolbar">
+        <div>
+          <h2>사진 OCR 확인</h2>
+          <p>OCR 결과는 후보입니다. 사람이 확인한 confirmed_serial만 USED 처리됩니다.</p>
+        </div>
+      </div>
+      <div class="grid two-col">
+        <div class="card">
+          <label id="photoDropZone" class="drop-zone" for="photoUpload">
+            <input id="photoUpload" class="hidden-input" type="file" accept="image/*" multiple />
+            <span class="drop-eyebrow">USED PHOTO UPLOAD</span>
+            <strong>사진 여러 장 선택 또는 드롭</strong>
+            <small>JPG, PNG, WebP 사진을 여러 장 올릴 수 있습니다. 선택된 사진 1장씩 OCR 판독 후 confirmed_serial 확인 뒤 USED 처리합니다.</small>
+          </label>
+          <div id="photoPreview" class="photo-preview empty">아직 업로드된 사진이 없습니다.</div>
+          <div class="form-grid">
+            <label>OCR 후보
+              <input id="ocrSerial" placeholder="AI OCR 판독 후 자동 입력" />
+            </label>
+            <label>OCR 신뢰도
+              <select id="ocrConfidence">
+                <option>high</option>
+                <option selected>low</option>
+                <option>failed</option>
+              </select>
+            </label>
+            <label>confirmed_serial
+              <input id="confirmedSerial" placeholder="사람이 최종 확인한 시리얼" />
+            </label>
+            <label>확정자
+              <input id="confirmedBy" value="field_user" />
+            </label>
+            <label>사진 파일명
+              <input id="photoFileName" placeholder="업로드 시 자동 입력" />
+            </label>
+          </div>
+          <div class="control-row" style="margin-top: 12px;">
+            <button id="runBrowserOcr" class="primary">선택 사진 OCR 판독</button>
+            <button id="mockOcr">파일명 후보 추출</button>
+            <button id="clearPhoto">사진 초기화</button>
+            <button id="confirmUsed" class="primary">최종 확인 후 사용 처리</button>
+            <button id="tryDuplicate" class="warn">중복 사용 처리 테스트</button>
+          </div>
+          <details style="margin-top: 12px;">
+            <summary style="cursor: pointer; color: #617086; font-size: 13px;">고급 옵션</summary>
+            <label style="margin-top: 8px; display: block;">매칭 대상 작업 오더 (자동 지정, 필요 시에만 변경)
+              <select id="ocrOrder"></select>
+            </label>
+            <div class="control-row" style="margin-top: 8px;">
+              <button id="runServerOcr">선택 사진 OpenAI OCR</button>
+              <button id="checkOcrStatus">OpenAI OCR 연결 점검</button>
+            </div>
+            <div id="ocrServerStatus" class="notice warn" style="margin-top: 8px;">OpenAI OCR(선택 사항)을 사용하려면 run_ocr_server.cmd로 서버를 켠 뒤 OCR 연결 점검을 누르세요.</div>
+          </details>
+        </div>
+        <div class="card">
+          <h2>처리 결과</h2>
+          <div id="ocrNotice" class="notice">사진을 업로드하면 자동으로 OCR 판독(Tesseract.js)을 실행해 시리얼 후보를 읽습니다.</div>
+          <label>OCR이 읽은 원문
+            <textarea id="ocrVisibleText" class="result-box" readonly rows="3" placeholder="판독 후 사진에서 읽힌 글자가 여기에 표시됩니다."></textarea>
+          </label>
+          <div id="ocrResult" class="result-box">{}</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="audit" class="view">
+      <div class="toolbar">
+        <div>
+          <h2>경보 및 처리 이력</h2>
+          <p>재주문 경고, OCR 예외, USED 처리 이력을 확인합니다.</p>
+        </div>
+      </div>
+      <div class="grid two-col">
+        <div class="card">
+          <h2>재주문 경고</h2>
+          <div id="alertTable" class="table-wrap"></div>
+        </div>
+        <div class="card">
+          <h2>OCR / 사진 처리</h2>
+          <div id="photoTable" class="table-wrap"></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top: 14px;">
+        <h2>Inventory Events</h2>
+        <div id="eventTable" class="table-wrap"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="data/order_list_2026_06.js"></script>
+  <script src="data/current_order_stock_2026_06.js"></script>
+  <script src="data/incoming_email_intake.js"></script>
+  <script src="data/incoming_schedules.js"></script>
+  <script>
+    const flexibagSizes = ["22KL", "24KL", "25KL"];
+    const defaultFlexibagSize = "24KL";
+    const orderListRows = Array.isArray(window.orderListRows) ? window.orderListRows : [];
+    const currentOrderStockRows = Array.isArray(window.currentOrderStockRows) ? window.currentOrderStockRows : [];
+    const incomingEmailRows = Array.isArray(window.incomingEmailRows) ? window.incomingEmailRows : [];
+    const incomingScheduleRows = Array.isArray(window.incomingScheduleRows) ? window.incomingScheduleRows : [];
+    const liveEmailApiBase = "http://127.0.0.1:4174";
+    let liveEmailSnapshot = { ok: false, state: {}, schedules: [], emails: [], error: "" };
+
+    const seedLocations = [
+      { location_id: "DSN", location_name: "대산", region: "Korea", lat: 37.001, lon: 126.350, reorder_point: 10, target_level: 22, unit_price_usd: 155, lead_time_days: 14, stock_tracking: true },
+      { location_id: "GSN", location_name: "군산", region: "Korea", lat: 35.988, lon: 126.564, reorder_point: 8, target_level: 18, unit_price_usd: 155, lead_time_days: 14, stock_tracking: true },
+      { location_id: "ULS", location_name: "울산", region: "Korea", lat: 35.538, lon: 129.311, reorder_point: 14, target_level: 30, unit_price_usd: 155, lead_time_days: 14, stock_tracking: true },
+      { location_id: "PTK", location_name: "평택", region: "Korea", lat: 36.966, lon: 126.823, reorder_point: 0, target_level: 0, unit_price_usd: 155, lead_time_days: 14, stock_tracking: false },
+      { location_id: "ETC", location_name: "기타", region: "Korea", lat: 0, lon: 0, reorder_point: 0, target_level: 0, unit_price_usd: 155, lead_time_days: 14, stock_tracking: false }
+    ];
+
+    const seedInventory = [];
+
+    const seedExceptionMaterials = [
+      {
+        material_id: "MAT-VALVE-3IN-BLBD",
+        material_name: "3 inch Valve BLBD",
+        category: "Valve",
+        location_id: "ULS",
+        storage_place: "ULS exception rack A-01",
+        qty_on_hand: 12,
+        unit: "EA",
+        status: "AVAILABLE",
+        last_checked: "2026-06-19",
+        note: "QC 라벨과 함께 확인되는 예외 밸브 부자재"
+      },
+      {
+        material_id: "MAT-ADAPTER-SET",
+        material_name: "Adapter Set",
+        category: "Adapter",
+        location_id: "GSN",
+        storage_place: "GSN sub-material box",
+        qty_on_hand: 6,
+        unit: "SET",
+        status: "AVAILABLE",
+        last_checked: "2026-06-19",
+        note: "현장 예외 대응용 어댑터 세트"
+      },
+      {
+        material_id: "MAT-SEAL-SPARE",
+        material_name: "Spare Seal",
+        category: "Seal",
+        location_id: "DSN",
+        storage_place: "DSN spare bin",
+        qty_on_hand: 30,
+        unit: "EA",
+        status: "AVAILABLE",
+        last_checked: "2026-06-19",
+        note: "파손/누락 대응 예비 실링"
+      }
+    ];
+
+    const sampleEmail = {
+      subject: "[HW GLS] 핏팅, 운송 / 울산 - 방콕 / 5월 29일 - 20DV*5 / SNKO010260508923",
+      body: [
+        "BKG SNKO010260508923, PO KPO2605-17, POL ULSAN, POD BANGKOK,",
+        "ITEM KIXX LUBO 150N, CNTR 20DV, QNTY 5",
+        "VESSEL SAWASDEE INCHEON 2607S",
+        "DOC 2026-06-19 14:00",
+        "COC 2026-06-20 18:00",
+        "ETD 2026-06-21",
+        "ETA 2026-06-30",
+        "TERMINAL 유나이티드탱크터미널",
+        "DESTINATION Bangkok, Thailand",
+        "GS-PI No. 20260518CM_KP5"
+      ].join("\n")
+    };
+
+    const stateKey = "flexibag-html-mvp-state-v6";
+    // 데이터가 갱신되었으므로 이전 버전 상태는 제거해 옛 재고가 표시되지 않게 합니다.
+    for (let i = 1; i <= 5; i += 1) localStorage.removeItem(`flexibag-html-mvp-state-v${i}`);
+    let state = normalizeDefaultFlexibagSizes(loadState());
+    saveState();
+    let uploadedPhotos = [];
+    let selectedPhotoId = "";
+    let uploadedPhoto = null;
+    let editingScheduleId = null;
+
+    function rangeSerial(prefix, start, end, locationId, flexibagSize) {
+      const rows = [];
+      for (let i = start; i <= end; i += 1) {
+        rows.push({
+          serial_no: `${prefix}${String(i).padStart(3, "0")}`,
+          location_id: locationId,
+          flexibag_size: flexibagSize,
+          status: "IN_STOCK",
+          intake_date: "2026-03-19",
+          used_date: "",
+          current_order_id: "",
+          note: "현재 재고",
+          source: "Current stock seed"
+        });
+      }
+      return rows;
+    }
+
+    function currentOrderInventoryRows() {
+      return currentOrderStockRows.map((row) => ({
+        serial_no: String(row.serial_no || "").trim(),
+        flexibag_size: row.flexibag_size || "UNKNOWN",
+        location_id: seedLocations.some((location) => location.location_id === row.location_id) ? row.location_id : "ETC",
+        status: "IN_STOCK",
+        intake_date: row.intake_date || "",
+        used_date: "",
+        current_order_id: "",
+        note: row.note || "",
+        source: row.source || "Order_List_2026-06 (1).xlsx ORDER",
+        history_id: row.history_id || "",
+        carrier: row.carrier || "",
+        destination: row.destination || "",
+        port: row.port || ""
+      })).filter((row) => row.serial_no);
+    }
+
+    function excelUsedInventoryRows() {
+      return orderListRows.map((row, index) => ({
+        serial_no: String(row.serial_no || "").trim(),
+        flexibag_size: row.flexibag_size || "UNKNOWN",
+        location_id: seedLocations.some((location) => location.location_id === row.location_id) ? row.location_id : "ETC",
+        status: row.status || "USED",
+        intake_date: row.intake_date || row.work_date || "",
+        used_date: row.status === "USED" ? (row.work_date || "") : "",
+        current_order_id: row.hbl_no || "",
+        note: [row.carrier, row.destination].filter(Boolean).join(" / "),
+        source: "Order_List_2026-06.xlsx",
+        history_id: `XLSX-${String(index + 1).padStart(5, "0")}`,
+        carrier: row.carrier || "",
+        destination: row.destination || "",
+        port: row.port || ""
+      })).filter((row) => row.serial_no);
+    }
+
+    function initialState() {
+      return {
+        locations: structuredClone(seedLocations),
+        inventory: [...currentOrderInventoryRows(), ...structuredClone(seedInventory), ...excelUsedInventoryRows()],
+        schedules: [
+          {
+            schedule_id: "SCH-2026-0529-001",
+            source_email_id: "EM-2026-0528-001",
+            work_date: "2026-05-29",
+            bkg_no: "SNKO010260508923",
+            po_no: "KPO2605-17",
+            location_id: "ULS",
+            pol: "ULSAN",
+            pod: "BANGKOK",
+            item: "KIXX LUBO 150N",
+            flexibag_size: defaultFlexibagSize,
+            cntr_type: "20DV",
+            cntr_qty: 5,
+            flexibag_qty: 5,
+            vessel_voy: "SAWASDEE INCHEON 2607S",
+            terminal: "유나이티드탱크터미널",
+            destination: "Bangkok, Thailand",
+            status: "CONFIRMED",
+            confirmed_by: "demo",
+            confirmed_at: "2026-06-19 09:00"
+          },
+          ...structuredClone(incomingScheduleRows)
+        ],
+        workOrders: [
+          {
+            order_id: "WO-2026-0529-001",
+            schedule_id: "SCH-2026-0529-001",
+            request_date: "2026-05-28",
+            work_date: "2026-05-29",
+            location_id: "ULS",
+            flexibag_size: defaultFlexibagSize,
+            qty_required: 5,
+            bkg_no: "SNKO010260508923",
+            status: "OPEN"
+          }
+        ],
+        emails: structuredClone(incomingEmailRows),
+        photos: [],
+        events: [],
+        exceptionMaterials: structuredClone(seedExceptionMaterials),
+        materialEvents: [],
+        lastParsed: null
+      };
+    }
+
+    function loadState() {
+      try {
+        const saved = localStorage.getItem(stateKey);
+        return saved ? JSON.parse(saved) : initialState();
+      } catch {
+        return initialState();
+      }
+    }
+
+    function scheduleHasExplicitFlexibagSize(draftState, schedule) {
+      const email = (draftState.emails || []).find((row) => row.email_id === schedule.source_email_id);
+      const sourceText = [
+        email?.subject || "",
+        email?.raw_body || "",
+        schedule.correction_note || ""
+      ].join("\n");
+      return /\b(22|24|25)\s*KL\b/i.test(sourceText);
+    }
+
+    function normalizeDefaultFlexibagSizes(draftState) {
+      if (!draftState || !Array.isArray(draftState.schedules)) return draftState || initialState();
+      const alreadyMigrated = draftState.default_size_migrated_to_24 === true;
+      draftState.schedules.forEach((schedule) => {
+        if (!schedule.flexibag_size) {
+          schedule.flexibag_size = defaultFlexibagSize;
+        } else if (!alreadyMigrated && schedule.flexibag_size === "22KL" && !scheduleHasExplicitFlexibagSize(draftState, schedule)) {
+          schedule.flexibag_size = defaultFlexibagSize;
+        }
+      });
+      if (Array.isArray(draftState.workOrders)) {
+        draftState.workOrders.forEach((order) => {
+          const schedule = draftState.schedules.find((row) => row.schedule_id === order.schedule_id);
+          if (schedule) order.flexibag_size = schedule.flexibag_size || defaultFlexibagSize;
+          if (!order.flexibag_size) order.flexibag_size = defaultFlexibagSize;
+        });
+      }
+      if (!Array.isArray(draftState.exceptionMaterials)) {
+        draftState.exceptionMaterials = structuredClone(seedExceptionMaterials);
+      }
+      if (!Array.isArray(draftState.materialEvents)) {
+        draftState.materialEvents = [];
+      }
+      draftState.exceptionMaterials.forEach((material) => {
+        material.material_id = material.material_id || makeMaterialId(material.material_name || "MATERIAL");
+        material.material_name = material.material_name || "Unnamed material";
+        material.category = material.category || "Other";
+        material.location_id = material.location_id || "ETC";
+        material.storage_place = material.storage_place || "";
+        material.qty_on_hand = Number(material.qty_on_hand || 0);
+        material.unit = material.unit || "EA";
+        material.status = material.status || "AVAILABLE";
+        material.last_checked = material.last_checked || todayIso();
+        material.note = material.note || "";
+      });
+      draftState.default_flexibag_size = defaultFlexibagSize;
+      draftState.default_size_migrated_to_24 = true;
+      return draftState;
+    }
+
+    function saveState() {
+      localStorage.setItem(stateKey, JSON.stringify(state));
+    }
+
+    function makeId(prefix) {
+      return `${prefix}-${new Date().toISOString().replace(/[-:TZ.]/g, "").slice(0, 14)}-${Math.random().toString(16).slice(2, 6).toUpperCase()}`;
+    }
+
+    function makeMaterialId(name) {
+      const slug = String(name || "MATERIAL")
+        .toUpperCase()
+        .replace(/[^A-Z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 18) || "MATERIAL";
+      return `MAT-${slug}-${Math.random().toString(16).slice(2, 6).toUpperCase()}`;
+    }
+
+    function todayIso() {
+      return new Date().toISOString().slice(0, 10);
+    }
+
+    function locationById(locationId) {
+      return state.locations.find((row) => row.location_id === locationId) || state.locations.find((row) => row.location_id === "ETC");
+    }
+
+    function trackingLocations() {
+      return state.locations.filter((row) => row.stock_tracking !== false);
+    }
+
+    function inventorySizes() {
+      const found = new Set(state.inventory.map((row) => row.flexibag_size || "UNKNOWN"));
+      return [...flexibagSizes, ...[...found].filter((size) => !flexibagSizes.includes(size)).sort()];
+    }
+
+    function actualStock(locationId, flexibagSize) {
+      return state.inventory.filter((row) =>
+        row.status === "IN_STOCK" &&
+        (!locationId || row.location_id === locationId) &&
+        (!flexibagSize || row.flexibag_size === flexibagSize)
+      ).length;
+    }
+
+    function usedStock(locationId, flexibagSize) {
+      return state.inventory.filter((row) =>
+        row.status === "USED" &&
+        (!locationId || row.location_id === locationId) &&
+        (!flexibagSize || row.flexibag_size === flexibagSize)
+      ).length;
+    }
+
+    function plannedUsage(locationId, untilDate) {
+      return state.schedules
+        .filter((row) => row.status === "CONFIRMED" && (!locationId || row.location_id === locationId) && row.work_date <= untilDate)
+        .reduce((sum, row) => sum + Number(row.flexibag_qty || 0), 0);
+    }
+
+    function forecastStock(locationId, targetDate) {
+      return actualStock(locationId) - plannedUsage(locationId, targetDate);
+    }
+
+    // 과거 사용(USED) 데이터를 이용해 거점별 "일 평균 소요량"을 추정한다.
+    // 1순위: 최근 windowDays 동안 실제 USED 처리된 시리얼 수 / 일수
+    // 2순위(USED 이력이 없으면): 과거 확정/완료 일정의 flexibag 수량 합 / 일수
+    function historicalDailyDemand(locationId, asOfDate, windowDays = 180) {
+      const end = new Date(`${asOfDate}T00:00:00`);
+      const start = new Date(end);
+      start.setDate(end.getDate() - windowDays);
+      const startIso = start.toISOString().slice(0, 10);
+      const usedCount = state.inventory.filter((row) =>
+        row.status === "USED" &&
+        (!locationId || row.location_id === locationId) &&
+        row.used_date && row.used_date >= startIso && row.used_date < asOfDate
+      ).length;
+      if (usedCount > 0) return usedCount / windowDays;
+      const scheduledQty = state.schedules
+        .filter((row) =>
+          (row.status === "CONFIRMED" || row.status === "COMPLETED") &&
+          (!locationId || row.location_id === locationId) &&
+          row.work_date && row.work_date >= startIso && row.work_date < asOfDate)
+        .reduce((sum, row) => sum + Number(row.flexibag_qty || 0), 0);
+      return scheduledQty / windowDays;
+    }
+
+    // 과거 windowDays 동안의 일자별 USED 수량을 배열로 만든다. (시계열 원본)
+    function dailyUsedSeries(locationId, asOfDate, windowDays) {
+      const end = new Date(`${asOfDate}T00:00:00`);
+      const start = new Date(end);
+      start.setDate(end.getDate() - windowDays);
+      const counts = new Array(windowDays).fill(0);
+      state.inventory.forEach((row) => {
+        if (row.status !== "USED") return;
+        if (locationId && row.location_id !== locationId) return;
+        if (!row.used_date) return;
+        const day = new Date(`${row.used_date}T00:00:00`);
+        const idx = Math.floor((day - start) / 86400000);
+        if (idx >= 0 && idx < windowDays) counts[idx] += 1;
+      });
+      return counts;
+    }
+
+    // 과거 USED 시계열을 가중 이동평균으로 예측한다.
+    // - 자료가 입력된 마지막 날까지를 '활성 구간'으로 보고, 빈 꼬리(미입력 구간)는 제외해 과소추정을 막는다.
+    // - 최근 60일 평균(추세 반영)과 전체 활성 평균을 6:4로 혼합하고, 0 붕괴를 막는 하한을 둔다.
+    function dailyDemandForecast(locationId, asOfDate, horizonDays, windowDays = 180) {
+      const series = dailyUsedSeries(locationId, asOfDate, windowDays);
+      let lastIdx = -1;
+      for (let i = series.length - 1; i >= 0; i -= 1) {
+        if (series[i] > 0) { lastIdx = i; break; }
+      }
+      if (lastIdx < 0) {
+        const flat = historicalDailyDemand(locationId, asOfDate, windowDays);
+        return new Array(horizonDays + 1).fill(flat);
+      }
+      const active = series.slice(0, lastIdx + 1);
+      const activeAvg = active.reduce((a, b) => a + b, 0) / active.length;
+      const recentLen = Math.min(60, active.length);
+      const recentAvg = active.slice(active.length - recentLen).reduce((a, b) => a + b, 0) / recentLen;
+      const blended = recentAvg * 0.6 + activeAvg * 0.4;
+      const daily = Math.max(blended, activeAvg * 0.25);
+      return new Array(horizonDays + 1).fill(daily);
+    }
+
+    function sizeMix(locationId) {
+      return inventorySizes()
+        .map((size) => `${size} ${actualStock(locationId, size)}`)
+        .join(" / ");
+    }
+
+    function sizeSummaryRows() {
+      return inventorySizes().map((size) => {
+        const inStock = actualStock(null, size);
+        const used = usedStock(null, size);
+        return {
+          flexibag_size: size,
+          in_stock: inStock,
+          used,
+          total_serials: inStock + used
+        };
+      });
+    }
+
+    function regionSummaryRows() {
+      const rows = [];
+      state.locations.forEach((location) => {
+        inventorySizes().forEach((size) => {
+          rows.push({
+            location_id: location.location_id,
+            location_name: location.location_name,
+            flexibag_size: size,
+            in_stock: actualStock(location.location_id, size),
+            used: usedStock(location.location_id, size)
+          });
+        });
+      });
+      return rows;
+    }
+
+    function reorderRecommendation(locationId, targetDate) {
+      const location = locationById(locationId);
+      const projected = forecastStock(locationId, targetDate);
+      let status = "정상";
+      if (projected <= 0) status = "부족";
+      else if (projected <= location.reorder_point) status = "주문 권장";
+      const recommended = status === "정상" ? 0 : Math.max(location.target_level - projected, 0);
+      return {
+        location_id: locationId,
+        location_name: location.location_name,
+        target_date: targetDate,
+        forecast_stock: projected,
+        reorder_point: location.reorder_point,
+        target_level: location.target_level,
+        status,
+        recommended_order_qty: recommended
+      };
+    }
+
+    function totalAssetValue() {
+      return state.inventory
+        .filter((row) => row.status === "IN_STOCK")
+        .reduce((sum, row) => sum + locationById(row.location_id).unit_price_usd, 0);
+    }
+
+    function normalizeSerial(value) {
+      return String(value || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "")
+        .replaceAll("O", "0").replaceAll("Q", "0").replaceAll("D", "0")
+        .replaceAll("I", "1").replaceAll("L", "1")
+        .replaceAll("Z", "2").replaceAll("E", "3")
+        .replaceAll("A", "4")
+        .replaceAll("S", "5")
+        .replaceAll("G", "6")
+        .replaceAll("T", "7")
+        .replaceAll("B", "8");
+    }
+
+    function isValidSerial(value) {
+      return /^\d{15}$/.test(normalizeSerial(value));
+    }
+
+    function bytesToText(bytes, charset) {
+      try {
+        return new TextDecoder(charset || "utf-8").decode(bytes);
+      } catch (error) {
+        return new TextDecoder("utf-8").decode(bytes);
+      }
+    }
+
+    function charsetFromContentType(contentType) {
+      const match = /charset="?([\w-]+)"?/i.exec(contentType || "");
+      return match ? match[1].toLowerCase() : "utf-8";
+    }
+
+    function latin1ToBytes(text) {
+      const bytes = new Uint8Array(text.length);
+      for (let i = 0; i < text.length; i += 1) bytes[i] = text.charCodeAt(i) & 0xff;
+      return bytes;
+    }
+
+    function base64ToBytes(text) {
+      try {
+        const binary = atob(text.replace(/\s/g, ""));
+        return latin1ToBytes(binary);
+      } catch (error) {
+        return latin1ToBytes(text);
+      }
+    }
+
+    function quotedPrintableToBytes(text) {
+      const stripped = text.replace(/=\r?\n/g, "");
+      const out = [];
+      for (let i = 0; i < stripped.length; i += 1) {
+        const ch = stripped[i];
+        if (ch === "=" && /^[A-Fa-f0-9]{2}$/.test(stripped.substr(i + 1, 2))) {
+          out.push(parseInt(stripped.substr(i + 1, 2), 16));
+          i += 2;
+        } else {
+          out.push(stripped.charCodeAt(i) & 0xff);
+        }
+      }
+      return Uint8Array.from(out);
+    }
+
+    function decodeMimeWords(value) {
+      if (!value) return "";
+      return value.replace(/=\?([^?]+)\?([BbQq])\?([^?]*)\?=/g, (_, charset, encoding, encodedText) => {
+        try {
+          const bytes = encoding.toUpperCase() === "B"
+            ? base64ToBytes(encodedText)
+            : quotedPrintableToBytes(encodedText.replace(/_/g, " "));
+          return bytesToText(bytes, charset);
+        } catch (error) {
+          return encodedText;
+        }
+      });
+    }
+
+    function decodeHeaderValue(value) {
+      if (!value) return "";
+      if (/=\?[^?]+\?[BbQq]\?[^?]*\?=/.test(value)) {
+        return decodeMimeWords(value);
+      }
+      return bytesToText(latin1ToBytes(value), "utf-8");
+    }
+
+    function stripHtmlText(value) {
+      return value
+        .replace(/<br\s*\/?>(\r?\n)?/gi, "\n")
+        .replace(/<\/(p|div|tr|li|h[1-6])>/gi, "\n")
+        .replace(/<[^>]+>/g, " ")
+        .replace(/&nbsp;/g, " ")
+        .replace(/&amp;/g, "&")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/[ \t]{2,}/g, " ")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
+    }
+
+    function parseEmailHeaders(rawLatin1) {
+      const splitIndex = rawLatin1.search(/\r?\n\r?\n/);
+      const headerText = splitIndex >= 0 ? rawLatin1.slice(0, splitIndex) : rawLatin1;
+      const unfolded = [];
+      for (const line of headerText.split(/\r?\n/)) {
+        if (/^[ \t]/.test(line) && unfolded.length) unfolded[unfolded.length - 1] += " " + line.trim();
+        else unfolded.push(line);
+      }
+      const headers = {};
+      for (const line of unfolded) {
+        const index = line.indexOf(":");
+        if (index === -1) continue;
+        headers[line.slice(0, index).toLowerCase().trim()] = line.slice(index + 1).trim();
+      }
+      return headers;
+    }
+
+    function decodePartBody(bodyLatin1, contentType, transferEncoding) {
+      const transfer = (transferEncoding || "").toLowerCase();
+      let bytes;
+      if (transfer.includes("base64")) bytes = base64ToBytes(bodyLatin1);
+      else if (transfer.includes("quoted-printable")) bytes = quotedPrintableToBytes(bodyLatin1);
+      else bytes = latin1ToBytes(bodyLatin1);
+      const text = bytesToText(bytes, charsetFromContentType(contentType));
+      return /text\/html/i.test(contentType || "") ? stripHtmlText(text) : text.trim();
+    }
+
+    function extractEmailBody(rawLatin1) {
+      const splitIndex = rawLatin1.search(/\r?\n\r?\n/);
+      if (splitIndex < 0) return rawLatin1.trim();
+      const headers = parseEmailHeaders(rawLatin1);
+      const bodyLatin1 = rawLatin1.slice(splitIndex).replace(/^\r?\n\r?\n/, "");
+      const contentType = headers["content-type"] || "";
+      if (!/multipart\//i.test(contentType)) {
+        return decodePartBody(bodyLatin1, contentType, headers["content-transfer-encoding"]);
+      }
+      const boundaryMatch = contentType.match(/boundary="?([^";]+)"?/i);
+      if (!boundaryMatch) return bodyLatin1.trim();
+      const parts = bodyLatin1.split("--" + boundaryMatch[1]);
+      const candidates = [];
+      for (const part of parts) {
+        const partSplit = part.search(/\r?\n\r?\n/);
+        if (partSplit < 0) continue;
+        const partHeaders = parseEmailHeaders(part);
+        const type = (partHeaders["content-type"] || "").toLowerCase();
+        if (!type.includes("text/")) continue;
+        const partBodyLatin1 = part.slice(partSplit).replace(/^\r?\n\r?\n/, "").replace(/\r?\n--\s*$/, "");
+        const decoded = decodePartBody(partBodyLatin1, type, partHeaders["content-transfer-encoding"]);
+        if (type.includes("text/plain")) candidates.unshift(decoded);
+        else if (type.includes("text/html")) candidates.push(decoded);
+      }
+      return (candidates.find(Boolean) || "").trim();
+    }
+
+    function readEmailFile(file) {
+      const info = document.querySelector("#emailFileInfo");
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onerror = () => {
+        info.style.display = "block";
+        info.className = "notice warn";
+        info.textContent = "파일을 읽지 못했습니다. .eml 또는 .txt 파일을 사용해 주세요.";
+      };
+      reader.onload = () => {
+        const bytes = new Uint8Array(reader.result);
+        let rawLatin1 = "";
+        const chunkSize = 0x8000;
+        for (let i = 0; i < bytes.length; i += chunkSize) {
+          rawLatin1 += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+        }
+        const looksLikeEmail = /^(subject|from|to|date|content-type|received|message-id)\s*:/im.test(rawLatin1.slice(0, 4000));
+        let subject = "";
+        let body = "";
+        if (looksLikeEmail) {
+          const headers = parseEmailHeaders(rawLatin1);
+          subject = decodeHeaderValue(headers.subject || "");
+          body = extractEmailBody(rawLatin1);
+        } else {
+          const utf8 = bytesToText(bytes, "utf-8");
+          const subjectMatch = utf8.match(/^\s*(?:Subject|제목)\s*:\s*(.+)$/im);
+          subject = subjectMatch ? subjectMatch[1].trim() : "";
+          body = subjectMatch ? utf8.replace(subjectMatch[0], "").trim() : utf8.trim();
+        }
+        document.querySelector("#emailSubject").value = subject;
+        document.querySelector("#emailBody").value = body;
+        document.querySelector("#savePending").disabled = true;
+        document.querySelector("#parseResult").textContent = "{}";
+        const notice = document.querySelector("#parseNotice");
+        notice.className = "notice";
+        notice.textContent = "메일 파일을 불러왔습니다. 메일 파싱을 실행하세요.";
+        info.style.display = "block";
+        info.className = body || subject ? "notice ok" : "notice warn";
+        info.textContent = body || subject
+          ? `파일 인식: ${file.name} (${(file.size / 1024).toFixed(1)} KB) · 제목/본문 자동 입력 완료`
+          : `파일 인식: ${file.name} · 본문을 추출하지 못했습니다. 내용을 직접 붙여넣어 주세요.`;
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function parseEmailToSchedule(subject, body) {
+      const text = `${subject}\n${body}`;
+      const compact = text.replace(/[ \t]+/g, " ");
+      const first = (regex) => {
+        const match = compact.match(regex);
+        return match ? match.find((value, index) => index > 0 && value) : null;
+      };
+      const koreanDate = compact.match(/(?:(20\d{2})\s*년\s*)?(\d{1,2})\s*월\s*(\d{1,2})\s*일/);
+      const isoDate = compact.match(/\b(20\d{2})[-/.](\d{1,2})[-/.](\d{1,2})\b/);
+      const keywordDate = compact.match(/(?:work\s*date|작업일|작업\s*날짜)\s*[:#-]?\s*(\d{1,2})[/.](\d{1,2})\b/i);
+      let workDate = null;
+      if (koreanDate) {
+        workDate = `${koreanDate[1] || "2026"}-${String(koreanDate[2]).padStart(2, "0")}-${String(koreanDate[3]).padStart(2, "0")}`;
+      } else if (isoDate) {
+        workDate = `${isoDate[1]}-${String(isoDate[2]).padStart(2, "0")}-${String(isoDate[3]).padStart(2, "0")}`;
+      } else if (keywordDate) {
+        workDate = `${new Date().getFullYear()}-${String(keywordDate[1]).padStart(2, "0")}-${String(keywordDate[2]).padStart(2, "0")}`;
+      }
+      const cntr = compact.match(/\b((?:20|40)(?:DV|HC|HQ|GP|RF|FT))\b\s*(?:[*xX]\s*(\d+))?/i);
+      const qty = compact.match(/\b(?:QNTY|QTY|QUANTITY|CNTR\s*QTY|수량)\b[^0-9]{0,12}(\d+)/i);
+      const unitQty = compact.match(/\b(\d+)\s*(?:개|EA(?!\w))/i);
+      const pol = first(/\bPOL\s*[:#-]?\s*([A-Z가-힣]+)/i);
+      const locationId = locationFromText(`${pol || ""} ${text}`);
+      const cntrQty = qty ? Number(qty[1]) : (cntr && cntr[2] ? Number(cntr[2]) : (unitQty ? Number(unitQty[1]) : null));
+      const sizeMatch = compact.match(/\b(22|24|25)\s*KL\b/i);
+      const warnings = [];
+      const parsed = {
+        work_date: workDate,
+        bkg_no: first(/\b(?:BKG|BOOKING(?:\s*NO\.?)?)\s*[:#-]?\s*([A-Z0-9-]{8,})/i),
+        po_no: first(/\b(?:PO|P\/O)(?![A-Za-z])\s*(?:NO\.?)?\s*[:#-]?\s*([A-Z0-9-]+)/i),
+        location_id: locationId,
+        pol: pol ? pol.toUpperCase() : null,
+        pod: (first(/\bPOD\s*[:#-]?\s*([A-Z가-힣]+)/i) || "").toUpperCase() || null,
+        item: first(/\bITEM\s*[:#-]?\s*([^,\n]+)/i),
+        flexibag_size: sizeMatch ? `${sizeMatch[1]}KL` : defaultFlexibagSize,
+        cntr_type: cntr ? cntr[1].toUpperCase() : null,
+        cntr_qty: cntrQty,
+        flexibag_qty: cntrQty,
+        vessel_voy: first(/\bVESSEL(?:\/VOY)?\s*[:#-]?\s*([^,\n]+)/i),
+        terminal: first(/\bTERMINAL\s*[:#-]?\s*([^,\n]+)/i),
+        destination: first(/\bDESTINATION\s*[:#-]?\s*([^,\n]+)/i),
+        confidence: "high",
+        warnings
+      };
+      if (!parsed.work_date) warnings.push("MISSING_WORK_DATE");
+      if (!parsed.bkg_no) warnings.push("MISSING_BKG");
+      if (!parsed.location_id) warnings.push("MISSING_LOCATION");
+      if (!parsed.flexibag_qty) warnings.push("MISSING_QTY");
+      parsed.confidence = warnings.length === 0 ? "high" : warnings.length <= 2 ? "medium" : "low";
+      return parsed;
+    }
+
+    function locationFromText(text) {
+      const upper = text.toUpperCase();
+      const aliases = [
+        ["ULS", "ULSAN", "울산"],
+        ["PTK", "PYEONGTAEK", "평택"],
+        ["DSN", "DAESAN", "대산"],
+        ["GSN", "GUNSAN", "군산"]
+      ];
+      const hit = aliases.find((items) => items.slice(1).some((value) => upper.includes(value) || text.includes(value)));
+      return hit ? hit[0] : null;
+    }
+
+    const PARSE_FIELDS = [
+      "work_date", "bkg_no", "po_no", "location_id", "pol", "pod", "item",
+      "flexibag_size", "cntr_type", "cntr_qty", "flexibag_qty", "vessel_voy", "terminal", "destination"
+    ];
+
+    function isEmptyValue(value) {
+      return value === null || value === undefined || value === "";
+    }
+
+    function countFilledParse(parsed) {
+      return PARSE_FIELDS.filter((field) => !isEmptyValue(parsed[field])).length;
+    }
+
+    function emailParseEndpoint() {
+      return window.location.protocol.startsWith("http")
+        ? "/api/flexibag/email-parse"
+        : "http://127.0.0.1:4173/api/flexibag/email-parse";
+    }
+
+    async function aiParseEmail(subject, body) {
+      const response = await fetch(emailParseEndpoint(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subject, body })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error || `AI 파싱 호출 실패 (${response.status})`);
+      }
+      return data.parsed || {};
+    }
+
+    // 정규식 결과를 기준으로 두고, 비어 있는 필드만 AI 결과로 보완한다(정규식 우선).
+    function mergeAiIntoParsed(base, ai) {
+      const merged = { ...base };
+      const filled = [];
+      PARSE_FIELDS.forEach((field) => {
+        if (!isEmptyValue(merged[field])) return;
+        let value = ai ? ai[field] : null;
+        if (isEmptyValue(value)) return;
+        if (field === "location_id") {
+          const code = String(value).toUpperCase();
+          value = ["ULS", "PTK", "DSN", "GSN"].includes(code)
+            ? code
+            : locationFromText(`${ai.location_name || ""} ${value}`);
+          if (isEmptyValue(value)) return;
+        } else if (field === "cntr_qty" || field === "flexibag_qty") {
+          const num = Number(value);
+          if (!Number.isFinite(num) || num <= 0) return;
+          value = num;
+        } else if (field === "pol" || field === "pod") {
+          value = String(value).toUpperCase();
+        } else if (typeof value === "string") {
+          value = value.trim();
+          if (!value) return;
+        }
+        merged[field] = value;
+        filled.push(field);
+      });
+
+      if (isEmptyValue(merged.flexibag_qty) && !isEmptyValue(merged.cntr_qty)) {
+        merged.flexibag_qty = merged.cntr_qty;
+      }
+
+      const warnings = [];
+      if (!merged.work_date) warnings.push("MISSING_WORK_DATE");
+      if (!merged.bkg_no) warnings.push("MISSING_BKG");
+      if (!merged.location_id) warnings.push("MISSING_LOCATION");
+      if (!merged.flexibag_qty) warnings.push("MISSING_QTY");
+      merged.warnings = warnings;
+      merged.confidence = warnings.length === 0 ? "high" : warnings.length <= 2 ? "medium" : "low";
+      merged._ai_filled = filled;
+      return merged;
+    }
+
+    function finalizeParse(parsed, regexFilled, aiError) {
+      state.lastParsed = parsed;
+      document.querySelector("#parseResult").textContent = JSON.stringify(parsed, null, 2);
+      document.querySelector("#savePending").disabled = false;
+      const notice = document.querySelector("#parseNotice");
+      if (aiError) {
+        notice.className = "notice warn";
+        notice.textContent = `AI 보완 실패 (정규식 결과 유지): ${aiError} · AI 서버(run_ocr_server)와 ANTHROPIC_API_KEY가 설정돼 있는지 확인하세요.`;
+        return;
+      }
+      const aiFilled = parsed._ai_filled || [];
+      if (parsed._engine === "regex+ai" && aiFilled.length) {
+        const tail = parsed.warnings.length ? `아직 확인 필요: ${parsed.warnings.join(", ")}` : "필수 필드가 모두 채워졌습니다.";
+        notice.className = parsed.warnings.length ? "notice warn" : "notice ok";
+        notice.textContent = `정규식 ${regexFilled}개 추출 + AI 보완 ${aiFilled.length}개(${aiFilled.join(", ")}). ${tail}`;
+        return;
+      }
+      notice.className = parsed.warnings.length ? "notice warn" : "notice ok";
+      notice.textContent = parsed.warnings.length ? `확인 필요: ${parsed.warnings.join(", ")}` : "필수 필드가 모두 추출되었습니다.";
+    }
+
+    function createPendingSchedule(parsed, subject, body) {
+      const emailId = makeId("EM");
+      const scheduleId = makeId("SCH");
+      state.emails.unshift({
+        email_id: emailId,
+        received_at: new Date().toLocaleString("sv-SE"),
+        subject,
+        raw_body: body,
+        parsed_json: JSON.stringify(parsed),
+        parse_confidence: parsed.confidence,
+        status: parsed.warnings.length ? "NEEDS_REVIEW" : "PARSED"
+      });
+      state.schedules.unshift({
+        schedule_id: scheduleId,
+        source_email_id: emailId,
+        work_date: parsed.work_date || todayIso(),
+        bkg_no: parsed.bkg_no || "",
+        po_no: parsed.po_no || "",
+        location_id: parsed.location_id || "",
+        pol: parsed.pol || "",
+        pod: parsed.pod || "",
+        item: parsed.item || "",
+        flexibag_size: parsed.flexibag_size || defaultFlexibagSize,
+        cntr_type: parsed.cntr_type || "",
+        cntr_qty: Number(parsed.cntr_qty || 0),
+        flexibag_qty: Number(parsed.flexibag_qty || parsed.cntr_qty || 0),
+        vessel_voy: parsed.vessel_voy || "",
+        terminal: parsed.terminal || "",
+        destination: parsed.destination || "",
+        status: "PENDING_CONFIRMATION",
+        confirmed_by: "",
+        confirmed_at: ""
+      });
+      saveState();
+      return scheduleId;
+    }
+
+    function orderIdForSchedule(schedule) {
+      return `WO-${schedule.schedule_id.replace(/^SCH-/, "")}`;
+    }
+
+    function syncWorkOrderFromSchedule(schedule) {
+      const orderId = orderIdForSchedule(schedule);
+      let order = state.workOrders.find((row) => row.schedule_id === schedule.schedule_id || row.order_id === orderId);
+      if (schedule.status !== "CONFIRMED") {
+        if (order) {
+          order.work_date = schedule.work_date;
+          order.location_id = schedule.location_id;
+          order.flexibag_size = schedule.flexibag_size || defaultFlexibagSize;
+          order.qty_required = Number(schedule.flexibag_qty || 0);
+          order.bkg_no = schedule.bkg_no;
+          order.status = schedule.status === "CANCELLED" ? "CANCELLED" : "PENDING";
+        }
+        return orderId;
+      }
+      if (!order) {
+        order = {
+          order_id: orderId,
+          schedule_id: schedule.schedule_id,
+          request_date: todayIso(),
+          flexibag_size: schedule.flexibag_size || defaultFlexibagSize,
+          status: "OPEN"
+        };
+        state.workOrders.unshift(order);
+      }
+      order.work_date = schedule.work_date;
+      order.location_id = schedule.location_id;
+      order.flexibag_size = schedule.flexibag_size || defaultFlexibagSize;
+      order.qty_required = Number(schedule.flexibag_qty || 0);
+      order.bkg_no = schedule.bkg_no;
+      if (order.status === "PENDING" || order.status === "CANCELLED") order.status = "OPEN";
+      return orderId;
+    }
+
+    function confirmSchedule(scheduleId, confirmedBy) {
+      const schedule = state.schedules.find((row) => row.schedule_id === scheduleId);
+      if (!schedule) return { ok: false, message: "일정을 찾을 수 없습니다." };
+      if (!schedule.location_id || !schedule.flexibag_qty || !schedule.work_date) {
+        return { ok: false, message: "거점, 수량, 작업일이 필요합니다." };
+      }
+      schedule.status = "CONFIRMED";
+      schedule.confirmed_by = confirmedBy || "operator";
+      schedule.confirmed_at = new Date().toLocaleString("sv-SE");
+      const orderId = syncWorkOrderFromSchedule(schedule);
+      const email = state.emails.find((row) => row.email_id === schedule.source_email_id);
+      if (email) email.status = "CONFIRMED";
+      saveState();
+      return { ok: true, message: `일정이 확정되고 작업 오더 ${orderId}가 생성되었습니다.` };
+    }
+
+    function formatBytes(bytes) {
+      const size = Number(bytes || 0);
+      if (size < 1024) return `${size} B`;
+      if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+      return `${(size / 1024 / 1024).toFixed(1)} MB`;
+    }
+
+    function activeUploadedPhoto() {
+      uploadedPhoto = uploadedPhotos.find((photo) => photo.id === selectedPhotoId) || uploadedPhotos[0] || null;
+      selectedPhotoId = uploadedPhoto?.id || "";
+      return uploadedPhoto;
+    }
+
+    function photoMeta(photo) {
+      return {
+        file_name: photo?.file_name || "",
+        file_size: photo?.file_size || 0,
+        mime_type: photo?.mime_type || "",
+        last_modified: photo?.last_modified || "",
+        read_at: photo?.read_at || ""
+      };
+    }
+
+    function resultForPhoto(photo) {
+      if (!photo) return null;
+      if (photo.ocr_result) return photo.ocr_result;
+      return {
+        ...extractSerialFromPhoto(photo.file_name, ""),
+        ...photoMeta(photo),
+        source: "browser_file_upload"
+      };
+    }
+
+    function selectUploadedPhoto(photoId, applyResult = true) {
+      selectedPhotoId = photoId || selectedPhotoId;
+      const photo = activeUploadedPhoto();
+      if (!photo) return;
+      document.querySelector("#photoFileName").value = photo.file_name;
+      if (applyResult) {
+        const result = resultForPhoto(photo);
+        photo.ocr_result = result;
+        applyExtractedSerial(result, { persist: false, renderPhoto: false });
+      }
+      renderPhotoPreview();
+    }
+
+    function renderPhotoPreview() {
+      const target = document.querySelector("#photoPreview");
+      const photo = activeUploadedPhoto();
+      if (!photo) {
+        target.className = "photo-preview empty";
+        target.innerHTML = "아직 업로드된 사진이 없습니다.";
+        return;
+      }
+      target.className = "photo-preview";
+      target.innerHTML = `
+        <div class="photo-meta">
+          <strong>${uploadedPhotos.length}장 업로드됨 · 선택: ${escapeHtml(photo.file_name)}</strong>
+          <span>${escapeHtml(photo.mime_type || "image")} · ${formatBytes(photo.file_size)} · 읽은 시간 ${escapeHtml(photo.read_at)}</span>
+          <span>아래 사진을 선택한 뒤 OCR 판독 또는 USED 처리를 진행합니다.</span>
+        </div>
+        <div class="photo-preview-list">
+          ${uploadedPhotos.map((item, index) => {
+            const result = item.ocr_result;
+            const serial = result?.normalized_serial || "";
+            return `
+              <button type="button" class="photo-card ${item.id === selectedPhotoId ? "active" : ""}" data-photo-id="${escapeHtml(item.id)}">
+                <img src="${item.data_url}" alt="${escapeHtml(item.file_name)} 미리보기" />
+                <span class="photo-card-text">
+                  <strong>${index + 1}. ${escapeHtml(item.file_name)}</strong>
+                  <span>${formatBytes(item.file_size)} · ${escapeHtml(result?.confidence || "대기")}</span>
+                  <em>${escapeHtml(serial || "시리얼 미확정")}</em>
+                </span>
+              </button>
+            `;
+          }).join("")}
+        </div>
+      `;
+      target.querySelectorAll(".photo-card").forEach((button) => {
+        button.addEventListener("click", () => selectUploadedPhoto(button.dataset.photoId));
+      });
+    }
+
+    function imageMetaForAudit() {
+      const photo = activeUploadedPhoto();
+      return photo ? photoMeta(photo) : null;
+    }
+
+    function serialDistance(a, b) {
+      const left = String(a || "");
+      const right = String(b || "");
+      const dp = Array.from({ length: left.length + 1 }, () => Array(right.length + 1).fill(0));
+      for (let i = 0; i <= left.length; i += 1) dp[i][0] = i;
+      for (let j = 0; j <= right.length; j += 1) dp[0][j] = j;
+      for (let i = 1; i <= left.length; i += 1) {
+        for (let j = 1; j <= right.length; j += 1) {
+          dp[i][j] = Math.min(
+            dp[i - 1][j] + 1,
+            dp[i][j - 1] + 1,
+            dp[i - 1][j - 1] + (left[i - 1] === right[j - 1] ? 0 : 1)
+          );
+        }
+      }
+      return dp[left.length][right.length];
+    }
+
+    const SERIAL_LEN = 15;
+
+    function serialTokensFromText(text) {
+      const source = String(text || "").toUpperCase();
+      // 시리얼은 한 줄 안에 있으므로 줄 단위로 끊어, 바로 아랫줄 숫자(예: 24000L)와 합쳐지지 않게 한다.
+      const matches = [];
+      for (const line of source.split(/[\r\n]+/)) {
+        for (const hit of line.match(/[0-9A-Z][0-9A-Z_ \t\-]{6,40}[0-9A-Z]/g) || []) matches.push(hit);
+      }
+      const seen = new Set();
+      const candidates = [];
+      const addCandidate = (raw, normalized) => {
+        if (normalized.length < 10 || seen.has(normalized)) return;
+        seen.add(normalized);
+        candidates.push({ raw: raw.trim(), normalized });
+      };
+      matches.forEach((raw) => {
+        const normalized = normalizeSerial(raw);
+        if (normalized.length < 10) return;
+        // 라벨 주변 잡음(크기 표시 등)이 시리얼 앞뒤에 붙어 길이가 달라지는 경우가 많으므로,
+        // 전체 길이를 그대로 보지 않고 SERIAL_LEN 크기의 창을 옆으로 옮기며 후보를 모두 뽑는다.
+        if (normalized.length <= SERIAL_LEN) {
+          addCandidate(raw, normalized);
+        } else {
+          for (let i = 0; i + SERIAL_LEN <= normalized.length; i += 1) {
+            addCandidate(raw, normalized.slice(i, i + SERIAL_LEN));
+          }
+        }
+      });
+      return candidates;
+    }
+
+    function selectedOrderLocationId() {
+      const select = document.querySelector("#ocrOrder");
+      const orderId = select ? select.value : "";
+      return state.workOrders.find((row) => row.order_id === orderId)?.location_id || "";
+    }
+
+    // 작업 오더 선택란을 숨겨뒀으므로, OCR이 시리얼을 찾으면 그 시리얼이 있는 거점의
+    // 작업 오더로 자동으로 맞춰준다. (그래야 마지막 사용 처리 단계에서 거점 불일치로 막히지 않음)
+    function alignOcrOrderToMatchedSerial(normalizedSerial) {
+      const select = document.querySelector("#ocrOrder");
+      if (!select || !normalizedSerial) return;
+      const serial = state.inventory.find((row) => row.serial_no === normalizedSerial);
+      if (!serial) return;
+      const currentOrder = state.workOrders.find((row) => row.order_id === select.value);
+      if (currentOrder && currentOrder.location_id === serial.location_id) return;
+      const matchingOrder = state.workOrders.find(
+        (row) => row.location_id === serial.location_id && (row.status === "OPEN" || row.status === "IN_PROGRESS")
+      );
+      if (matchingOrder) select.value = matchingOrder.order_id;
+    }
+
+    function resolveSerialCandidate(raw, normalized) {
+      if (!normalized) return null;
+      const exact = state.inventory.find((row) => row.serial_no === normalized);
+      if (exact) {
+        return {
+          raw,
+          normalized_serial: exact.serial_no,
+          confidence: "high",
+          match_type: "exact_inventory_match",
+          inventory_status: exact.status,
+          distance: 0
+        };
+      }
+      const locationId = selectedOrderLocationId();
+      const pool = state.inventory.filter((row) => row.status === "IN_STOCK");
+      let best = null;
+      pool.forEach((row) => {
+        const distance = serialDistance(normalized, row.serial_no);
+        const preferred = locationId && row.location_id === locationId;
+        if (
+          !best ||
+          distance < best.distance ||
+          (distance === best.distance && preferred && !best.preferred)
+        ) {
+          best = { row, distance, preferred };
+        }
+      });
+      if (best && best.distance <= 2) {
+        return {
+          raw,
+          normalized_serial: best.row.serial_no,
+          confidence: best.distance === 0 ? "high" : "low",
+          match_type: "near_inventory_match",
+          inventory_status: best.row.status,
+          distance: best.distance
+        };
+      }
+      if (isValidSerial(normalized)) {
+        return {
+          raw,
+          normalized_serial: normalized,
+          confidence: "low",
+          match_type: "valid_serial_not_in_stock",
+          inventory_status: "",
+          distance: null
+        };
+      }
+      return null;
+    }
+
+    function extractSerialFromPhoto(fileName, ocrSerial, extraText = "") {
+      const source = `${fileName || ""}\n${ocrSerial || ""}\n${extraText || ""}`;
+      const candidates = serialTokensFromText(source)
+        .map((candidate) => resolveSerialCandidate(candidate.raw, candidate.normalized))
+        .filter(Boolean)
+        .sort((a, b) => {
+          const rank = { exact_inventory_match: 3, near_inventory_match: 2, valid_serial_not_in_stock: 1 };
+          return (rank[b.match_type] || 0) - (rank[a.match_type] || 0) || (a.distance ?? 99) - (b.distance ?? 99);
+        });
+      const best = candidates[0];
+      if (!best) {
+        return {
+          ocr_serial: "",
+          normalized_serial: "",
+          confidence: "failed",
+          candidates: [],
+          warning: "No serial candidate found. Use AI OCR server or enter confirmed_serial manually."
+        };
+      }
+      return {
+        ocr_serial: best.raw,
+        normalized_serial: best.normalized_serial,
+        confidence: best.confidence,
+        match_type: best.match_type,
+        inventory_status: best.inventory_status,
+        distance: best.distance,
+        candidates,
+        warning: best.match_type === "near_inventory_match"
+          ? "OCR was corrected to the nearest current inventory serial. Human confirmation required."
+          : "Human confirmation required."
+      };
+    }
+
+    function applyExtractedSerial(result, options = {}) {
+      const confidence = ["high", "low", "failed"].includes(result.confidence) ? result.confidence : (result.normalized_serial ? "low" : "failed");
+      document.querySelector("#ocrSerial").value = result.ocr_serial || "";
+      document.querySelector("#confirmedSerial").value = result.normalized_serial || "";
+      document.querySelector("#ocrConfidence").value = confidence;
+      document.querySelector("#ocrVisibleText").value = result.visible_text || "(원문 없음 — 파일명 후보 추출 등 사진 글자 인식이 없는 경우입니다)";
+      document.querySelector("#ocrResult").textContent = JSON.stringify(result, null, 2);
+      alignOcrOrderToMatchedSerial(result.normalized_serial);
+      const photo = activeUploadedPhoto();
+      if (photo && options.persist !== false) photo.ocr_result = { ...result, confidence };
+      document.querySelector("#ocrNotice").className = result.normalized_serial ? "notice warn" : "notice";
+      document.querySelector("#ocrNotice").textContent = result.normalized_serial
+        ? "시리얼 후보를 찾았습니다. 가까운 재고 시리얼로 보정됐을 수 있으니 confirmed_serial을 최종 확인하세요."
+        : "시리얼 후보를 찾지 못했습니다. OpenAI OCR 판독을 실행하거나 confirmed_serial을 직접 입력하세요.";
+      if (options.renderPhoto !== false) renderPhotoPreview();
+    }
+
+    function readPhotoFile(file) {
+      return readPhotoFiles(file ? [file] : []);
+    }
+
+    function readPhotoFiles(fileList) {
+      const files = Array.from(fileList || []);
+      if (!files.length) return Promise.resolve([]);
+      const imageFiles = files.filter((file) => file.type.startsWith("image/"));
+      if (!imageFiles.length) {
+        document.querySelector("#ocrNotice").className = "notice warn";
+        document.querySelector("#ocrNotice").textContent = "이미지 파일만 업로드할 수 있습니다.";
+        return Promise.resolve([]);
+      }
+      if (imageFiles.length !== files.length) {
+        document.querySelector("#ocrNotice").className = "notice warn";
+        document.querySelector("#ocrNotice").textContent = "이미지가 아닌 파일은 제외하고 업로드했습니다.";
+      }
+      const readJobs = imageFiles.map((file) => new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.addEventListener("load", () => {
+          const photo = {
+            id: makeId("IMG"),
+            file,
+            file_name: file.name,
+            file_size: file.size,
+            mime_type: file.type,
+            last_modified: file.lastModified ? new Date(file.lastModified).toLocaleString("sv-SE") : "",
+            read_at: new Date().toLocaleString("sv-SE"),
+            data_url: reader.result,
+            ocr_result: null
+          };
+          photo.ocr_result = {
+            ...extractSerialFromPhoto(file.name, ""),
+            ...photoMeta(photo),
+            source: "browser_file_upload"
+          };
+          resolve(photo);
+        });
+        reader.addEventListener("error", () => resolve(null));
+        reader.readAsDataURL(file);
+      }));
+      return Promise.all(readJobs).then((photos) => {
+        const loaded = photos.filter(Boolean);
+        if (!loaded.length) {
+          document.querySelector("#ocrNotice").className = "notice warn";
+          document.querySelector("#ocrNotice").textContent = "사진 파일을 읽지 못했습니다. 다른 파일로 다시 시도하세요.";
+          return [];
+        }
+        uploadedPhotos.push(...loaded);
+        selectUploadedPhoto(loaded[0].id);
+        document.querySelector("#ocrNotice").className = "notice ok";
+        document.querySelector("#ocrNotice").textContent = `${loaded.length}장 업로드했습니다. 자동 OCR 판독을 시작합니다...`;
+        runBrowserPhotoOcr();
+        return loaded;
+      });
+    }
+
+    function clearUploadedPhoto() {
+      uploadedPhotos = [];
+      selectedPhotoId = "";
+      uploadedPhoto = null;
+      const input = document.querySelector("#photoUpload");
+      if (input) input.value = "";
+      renderPhotoPreview();
+      document.querySelector("#ocrResult").textContent = "{}";
+      document.querySelector("#photoFileName").value = "";
+      document.querySelector("#ocrSerial").value = "";
+      document.querySelector("#confirmedSerial").value = "";
+      document.querySelector("#ocrNotice").className = "notice";
+      document.querySelector("#ocrNotice").textContent = "사진을 업로드하면 파일을 읽고 시리얼 후보를 추출합니다.";
+    }
+
+    function ocrEndpoint() {
+      return window.location.protocol.startsWith("http") ? "/api/flexibag/ocr" : "http://127.0.0.1:4173/api/flexibag/ocr";
+    }
+
+    function ocrHealthEndpoint() {
+      return window.location.protocol.startsWith("http") ? "/api/ocr/health" : "http://127.0.0.1:4173/api/ocr/health";
+    }
+
+    async function checkOcrStatus() {
+      const status = document.querySelector("#ocrServerStatus");
+      const isFileMode = window.location.protocol === "file:";
+      status.className = "notice";
+      status.textContent = "OCR 서버 연결을 확인 중입니다.";
+      try {
+        const response = await fetch(ocrHealthEndpoint());
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.ok) throw new Error(data.error || `OCR health check failed ${response.status}`);
+        if (data.ocrEnabled) {
+          status.className = "notice ok";
+          status.textContent = `${isFileMode ? "현재 file:// 화면이지만 " : ""}OpenAI OCR 서버가 준비되었습니다. 모델 ${data.model}로 사진 판독이 가능합니다.`;
+        } else {
+          status.className = "notice warn";
+          status.textContent = "OCR 서버는 켜져 있지만 OPENAI_API_KEY가 없거나 잘못되었습니다. run_ocr_server.cmd 실행 시 sk-... API 키를 입력하세요.";
+        }
+        return data;
+      } catch (error) {
+        status.className = "notice warn";
+        status.textContent = "OCR 서버에 연결할 수 없습니다. run_ocr_server.cmd를 실행하고, http://127.0.0.1:4173 주소로 앱을 다시 여세요.";
+        return { ok: false, error: error.message };
+      }
+    }
+
+    function ocrTextFromServerResponse(data) {
+      const extracted = data?.extracted || {};
+      const serverCandidateText = Array.isArray(data?.serialCandidates)
+        ? data.serialCandidates.map((row) => `${row.raw || ""} ${row.normalized || ""}`).join("\n")
+        : "";
+      const modelCandidateText = Array.isArray(extracted.serial_candidates)
+        ? extracted.serial_candidates.map((row) => `${row.raw || ""} ${row.normalized || ""}`).join("\n")
+        : "";
+      return [
+        data?.serial || "",
+        data?.bestSerial || "",
+        serverCandidateText,
+        extracted.best_serial || "",
+        modelCandidateText,
+        data?.visibleText || "",
+        extracted.visible_text || "",
+        data?.rawText || "",
+        JSON.stringify(extracted)
+      ].join("\n");
+    }
+
+    let tesseractLoadPromise = null;
+    function loadTesseract() {
+      if (window.Tesseract) return Promise.resolve(window.Tesseract);
+      if (tesseractLoadPromise) return tesseractLoadPromise;
+      tesseractLoadPromise = new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
+        script.onload = () => resolve(window.Tesseract);
+        script.onerror = () => reject(new Error("Tesseract.js 로드 실패 (인터넷 연결 필요)"));
+        document.head.appendChild(script);
+      });
+      return tesseractLoadPromise;
+    }
+
+    async function runBrowserPhotoOcr() {
+      const photo = activeUploadedPhoto();
+      if (!photo?.data_url) {
+        document.querySelector("#ocrNotice").className = "notice warn";
+        document.querySelector("#ocrNotice").textContent = "브라우저 OCR 전에 사진 파일을 먼저 업로드하세요.";
+        return;
+      }
+      const button = document.querySelector("#runBrowserOcr");
+      const notice = document.querySelector("#ocrNotice");
+      button.disabled = true;
+      notice.className = "notice";
+      notice.textContent = "브라우저 OCR(Tesseract.js)을 불러와 사진을 판독 중입니다. 처음 실행 시 모델 다운로드로 몇 초 걸릴 수 있습니다.";
+      try {
+        const Tesseract = await loadTesseract();
+        const { data } = await Tesseract.recognize(photo.data_url, "eng", {
+          logger: (msg) => {
+            if (msg.status === "recognizing text") {
+              notice.textContent = `브라우저 OCR 판독 중... ${Math.round((msg.progress || 0) * 100)}%`;
+            }
+          },
+          tessedit_char_whitelist: "0123456789OILoil -_/",
+        });
+        const visibleText = data?.text || "";
+        const result = {
+          ...extractSerialFromPhoto(photo.file_name, document.querySelector("#ocrSerial").value, visibleText),
+          file_name: photo.file_name,
+          file_size: photo.file_size,
+          mime_type: photo.mime_type,
+          source: "browser_tesseract_ocr",
+          engine: "tesseract.js",
+          visible_text: visibleText.replace(/\s+/g, " ").trim().slice(0, 400),
+        };
+        photo.ocr_result = result;
+        selectedPhotoId = photo.id;
+        applyExtractedSerial(result, { persist: false });
+        notice.className = result.normalized_serial ? "notice ok" : "notice warn";
+        notice.textContent = result.normalized_serial
+          ? "브라우저 OCR 판독 완료. 가까운 재고 시리얼로 보정됐을 수 있으니 confirmed_serial을 최종 확인한 뒤 USED 처리하세요."
+          : "브라우저 OCR이 시리얼 후보를 찾지 못했습니다. 사진을 더 가까이/정면으로 찍거나 confirmed_serial을 직접 입력하세요.";
+      } catch (error) {
+        document.querySelector("#ocrResult").textContent = JSON.stringify({
+          ok: false,
+          message: error.message,
+          next_step: "브라우저 OCR이 실패하면 OpenAI OCR 판독 또는 confirmed_serial 직접 입력을 사용하세요.",
+        }, null, 2);
+        notice.className = "notice warn";
+        notice.textContent = "브라우저 OCR을 실행할 수 없습니다. 인터넷 연결을 확인하거나 다른 판독 방식을 사용하세요.";
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function runServerPhotoOcr() {
+      const photo = activeUploadedPhoto();
+      if (!photo?.file) {
+        document.querySelector("#ocrNotice").className = "notice warn";
+        document.querySelector("#ocrNotice").textContent = "AI OCR 전에 사진 파일을 먼저 업로드하세요.";
+        return;
+      }
+      const button = document.querySelector("#runServerOcr");
+      button.disabled = true;
+      document.querySelector("#ocrNotice").className = "notice";
+      document.querySelector("#ocrNotice").textContent = "AI OCR 서버가 사진을 판독 중입니다. 라벨이 작거나 흐리면 시간이 조금 걸릴 수 있습니다.";
+      try {
+        const health = await checkOcrStatus();
+        if (!health.ok || !health.ocrEnabled) {
+          throw new Error(health.error || "OCR server is not ready.");
+        }
+        const form = new FormData();
+        form.append("task", "flexibag_serial");
+        form.append("manualText", [
+          document.querySelector("#photoFileName").value,
+          document.querySelector("#ocrSerial").value
+        ].join("\n"));
+        form.append("file", photo.file, photo.file_name);
+        const response = await fetch(ocrEndpoint(), { method: "POST", body: form });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.ok) throw new Error(data.error || `OCR server error ${response.status}`);
+        const serverText = ocrTextFromServerResponse(data);
+        const result = {
+          ...extractSerialFromPhoto(photo.file_name, data.serial || data.bestSerial || document.querySelector("#ocrSerial").value, serverText),
+          file_name: photo.file_name,
+          file_size: photo.file_size,
+          mime_type: photo.mime_type,
+          source: "server_ai_ocr",
+          server_task: data.task,
+          server_model: data.model,
+          server_serial: data.serial || "",
+          server_candidates: data.serialCandidates || [],
+          visible_text: data.visibleText || data.extracted?.visible_text || "",
+          server_warning: data.warning || data.extracted?.warning || ""
+        };
+        photo.ocr_result = result;
+        selectedPhotoId = photo.id;
+        applyExtractedSerial(result, { persist: false });
+        document.querySelector("#ocrNotice").className = result.normalized_serial ? "notice ok" : "notice warn";
+        document.querySelector("#ocrNotice").textContent = result.normalized_serial
+          ? "AI OCR 판독 완료. confirmed_serial이 실제 사진과 맞는지 최종 확인한 뒤 USED 처리하세요."
+          : "AI OCR도 시리얼 후보를 찾지 못했습니다. 사진을 더 가까이 찍거나 confirmed_serial을 직접 입력하세요.";
+      } catch (error) {
+        document.querySelector("#ocrResult").textContent = JSON.stringify({
+          ok: false,
+          message: error.message,
+          next_step: "실제 사진 OCR은 run_ocr_server.cmd로 서버를 켜고 OPENAI_API_KEY를 설정해야 합니다.",
+          server_url: "http://127.0.0.1:4173/flexibag-inventory-ai-ocr/flexibag-inventory-ai-ocr.html"
+        }, null, 2);
+        document.querySelector("#ocrNotice").className = "notice warn";
+        document.querySelector("#ocrNotice").textContent = "AI OCR 서버를 사용할 수 없습니다. 서버 실행/API 키를 확인하거나 파일명 후보 추출과 수기 확인으로 처리하세요.";
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    function confirmUsedSerial({ orderId, confirmedSerial, confirmedBy, ocrSerial, ocrConfidence, imagePath, imageMeta }) {
+      const normalized = normalizeSerial(confirmedSerial);
+      const photoId = makeId("PH");
+      const order = state.workOrders.find((row) => row.order_id === orderId);
+      if (!order) return { result: "INVALID_SERIAL", message: "작업 오더가 없습니다.", photo_id: photoId };
+      const serial = state.inventory.find((row) => row.serial_no === normalized);
+      const basePhoto = {
+        photo_id: photoId,
+        order_id: orderId,
+        uploaded_at: new Date().toLocaleString("sv-SE"),
+        image_path: imagePath || "mock://photo",
+        image_name: imageMeta?.file_name || imagePath || "",
+        image_size: imageMeta?.file_size || 0,
+        image_type: imageMeta?.mime_type || "",
+        image_last_modified: imageMeta?.last_modified || "",
+        image_read_at: imageMeta?.read_at || "",
+        ocr_serial: ocrSerial || "",
+        ocr_confidence: ocrConfidence || "low",
+        confirmed_serial: normalized,
+        confirmed_by: confirmedBy || "field_user",
+        confirmed_at: new Date().toLocaleString("sv-SE")
+      };
+
+      if (!serial || !isValidSerial(normalized)) {
+        state.photos.unshift({ ...basePhoto, location_id: order.location_id, result: "INVALID_SERIAL" });
+        saveState();
+        return { result: "INVALID_SERIAL", message: "시리얼 원장에 없는 번호입니다.", photo_id: photoId };
+      }
+
+      if (serial.status === "USED") {
+        state.photos.unshift({ ...basePhoto, location_id: serial.location_id, result: "DUPLICATE_USED" });
+        state.events.unshift({
+          event_id: makeId("EVT"),
+          serial_no: normalized,
+          event_type: "CORRECTION",
+          from_status: "USED",
+          to_status: "USED",
+          location_id: serial.location_id,
+          order_id: orderId,
+          photo_id: photoId,
+          event_time: new Date().toLocaleString("sv-SE"),
+          confirmed_by: confirmedBy || "field_user",
+          note: "Duplicate USED attempt blocked"
+        });
+        saveState();
+        return { result: "DUPLICATE_USED", message: "이미 USED 처리된 시리얼입니다.", photo_id: photoId };
+      }
+
+      if (serial.location_id !== order.location_id) {
+        state.photos.unshift({ ...basePhoto, location_id: serial.location_id, result: "LOCATION_MISMATCH" });
+        state.events.unshift({
+          event_id: makeId("EVT"),
+          serial_no: normalized,
+          event_type: "CORRECTION",
+          from_status: serial.status,
+          to_status: serial.status,
+          location_id: serial.location_id,
+          order_id: orderId,
+          photo_id: photoId,
+          event_time: new Date().toLocaleString("sv-SE"),
+          confirmed_by: confirmedBy || "field_user",
+          note: `Location mismatch: order=${order.location_id} serial=${serial.location_id}`
+        });
+        saveState();
+        return { result: "LOCATION_MISMATCH", message: "오더 거점과 시리얼 거점이 다릅니다.", photo_id: photoId };
+      }
+
+      const fromStatus = serial.status;
+      serial.status = "USED";
+      serial.used_date = todayIso();
+      serial.current_order_id = orderId;
+      const result = ocrSerial && normalizeSerial(ocrSerial) !== normalized ? "USED_OK_CORRECTED" : "USED_OK";
+      state.photos.unshift({ ...basePhoto, location_id: serial.location_id, result });
+      state.events.unshift({
+        event_id: makeId("EVT"),
+        serial_no: normalized,
+        event_type: "USE",
+        from_status: fromStatus,
+        to_status: "USED",
+        location_id: serial.location_id,
+        order_id: orderId,
+        photo_id: photoId,
+        event_time: new Date().toLocaleString("sv-SE"),
+        confirmed_by: confirmedBy || "field_user",
+        note: "Human-confirmed OCR serial"
+      });
+      saveState();
+      return { result, message: "USED 처리와 감사 로그 기록이 완료되었습니다.", photo_id: photoId };
+    }
+
+    function projectionRows(locationId, days = 30) {
+      const targetDate = document.querySelector("#targetDate").value || todayIso();
+      const start = new Date(`${targetDate}T00:00:00`);
+      const forecastSeries = dailyDemandForecast(locationId, targetDate, days);
+      const baseStock = actualStock(locationId);
+      const rows = [];
+      let cumExpected = 0;
+      for (let i = 0; i <= days; i += 1) {
+        const day = new Date(start);
+        day.setDate(start.getDate() + i);
+        const iso = day.toISOString().slice(0, 10);
+        const usage = state.schedules
+          .filter((row) => row.status === "CONFIRMED" && row.location_id === locationId && row.work_date === iso)
+          .reduce((sum, row) => sum + Number(row.flexibag_qty || 0), 0);
+        // 확정 일정이 있는 날은 그 수량을, 없는 날은 시계열 예측값을 예상 필요 수량으로 본다.
+        const expectedUsage = usage > 0 ? usage : forecastSeries[i];
+        if (i > 0) cumExpected += expectedUsage;
+        const current = forecastStock(locationId, iso);
+        rows.push({
+          date: iso,
+          planned_usage: usage,
+          expected_usage: Math.round(expectedUsage * 10) / 10,
+          projected_stock: current,
+          forecast_stock: Math.round(baseStock - cumExpected)
+        });
+      }
+      return rows;
+    }
+
+    function badge(status) {
+      const cls = status === "정상" || status === "USED_OK" || status === "USED_OK_CORRECTED" || status === "CONFIRMED" ? "ok"
+        : status === "AVAILABLE" || status === "IN" ? "ok"
+        : status === "주문 권장" || status === "PENDING_CONFIRMATION" || status === "RESERVED" || status === "ADJUST" ? "warn"
+        : status === "부족" || status === "INVALID_SERIAL" || status === "DUPLICATE_USED" || status === "LOCATION_MISMATCH" || status === "QUARANTINE" || status === "CONSUMED" || status === "LOST" || status === "OUT" ? "danger"
+        : "neutral";
+      return `<span class="badge ${cls}">${escapeHtml(status || "")}</span>`;
+    }
+
+    function table(rows, columns, emptyText = "표시할 데이터가 없습니다.") {
+      if (!rows.length) return `<div class="empty">${emptyText}</div>`;
+      const head = columns.map((col) => `<th>${escapeHtml(col.label)}</th>`).join("");
+      const body = rows.map((row) => {
+        const cells = columns.map((col) => {
+          const value = col.render ? col.render(row) : row[col.key];
+          return `<td>${value == null ? "" : value}</td>`;
+        }).join("");
+        return `<tr>${cells}</tr>`;
+      }).join("");
+      return `<table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function normalizeLiveSchedule(row) {
+      return {
+        schedule_id: row.schedule_id,
+        source_email_id: row.source_email_id || "",
+        work_date: row.work_date || todayIso(),
+        bkg_no: row.bkg_no || "",
+        po_no: row.po_no || "",
+        location_id: row.location_id || "",
+        pol: row.pol || "",
+        pod: row.pod || "",
+        item: row.item || "",
+        flexibag_size: row.flexibag_size || defaultFlexibagSize,
+        cntr_type: row.cntr_type || "",
+        cntr_qty: Number(row.cntr_qty || row.flexibag_qty || 0),
+        flexibag_qty: Number(row.flexibag_qty || row.cntr_qty || 0),
+        vessel_voy: row.vessel_voy || "",
+        terminal: row.terminal || "",
+        destination: row.destination || "",
+        status: row.status || "PENDING_CONFIRMATION",
+        confirmed_by: row.confirmed_by || "",
+        confirmed_at: row.confirmed_at || "",
+        source: "Gmail DB"
+      };
+    }
+
+    function mergeLiveEmailSnapshot(snapshot) {
+      if (!snapshot || !snapshot.ok) return;
+      const existingSchedules = new Map(state.schedules.map((row) => [row.schedule_id, row]));
+      (snapshot.schedules || []).forEach((row) => {
+        const normalized = normalizeLiveSchedule(row);
+        existingSchedules.set(normalized.schedule_id, { ...(existingSchedules.get(normalized.schedule_id) || {}), ...normalized });
+      });
+      state.schedules = [...existingSchedules.values()];
+
+      const existingEmails = new Map((state.emails || []).map((row) => [row.email_id || `${row.received_at}-${row.subject}`, row]));
+      (snapshot.emails || []).forEach((row) => {
+        const key = row.email_id || `${row.received_at}-${row.subject}`;
+        existingEmails.set(key, { ...(existingEmails.get(key) || {}), ...row, source: "Gmail DB" });
+      });
+      state.emails = [...existingEmails.values()];
+      saveState();
+    }
+
+    async function fetchLiveEmailState({ pollNow = false } = {}) {
+      const endpoint = pollNow ? "/poll-now" : "/api/state";
+      const response = await fetch(`${liveEmailApiBase}${endpoint}`, { cache: "no-store" });
+      if (!response.ok) throw new Error(`Live email server returned ${response.status}`);
+      if (pollNow) {
+        await fetch(`${liveEmailApiBase}/api/state`, { cache: "no-store" })
+          .then((stateResponse) => stateResponse.json())
+          .then((snapshot) => {
+            liveEmailSnapshot = snapshot;
+            mergeLiveEmailSnapshot(snapshot);
+          });
+        return;
+      }
+      const snapshot = await response.json();
+      liveEmailSnapshot = snapshot;
+      mergeLiveEmailSnapshot(snapshot);
+    }
+
+    function renderLiveEmail() {
+      const notice = document.querySelector("#liveEmailNotice");
+      const snapshot = liveEmailSnapshot || {};
+      const serverState = snapshot.state || {};
+      const schedules = (snapshot.schedules || []).map(normalizeLiveSchedule);
+      const emails = snapshot.emails || [];
+      const pending = schedules.filter((row) => row.status === "PENDING_CONFIRMATION").length;
+
+      if (notice) {
+        if (snapshot.ok) {
+          notice.textContent = `실시간 수신 서버 연결됨 · 최근 확인 ${serverState.last_poll_at || "-"} · 체크 ${serverState.poll_count || 0}회`;
+        } else {
+          notice.textContent = `실시간 수신 서버 연결 대기 중${snapshot.error ? ` · ${snapshot.error}` : ""}`;
+        }
+      }
+
+      const kpis = [
+        ["DB 전체 일정", `${schedules.length} 건`, "Gmail/DB 기준"],
+        ["확인 대기", `${pending} 건`, "PENDING_CONFIRMATION"],
+        ["최근 수신 확인", serverState.last_poll_at || "-", "Gmail polling"],
+        ["최근 생성", `${(serverState.last_created || []).length} 건`, "마지막 체크 결과"]
+      ];
+      const kpiGrid = document.querySelector("#liveEmailKpis");
+      if (kpiGrid) {
+        kpiGrid.innerHTML = kpis.map(([label, value, sub]) => `
+          <div class="card tight">
+            <div class="kpi-label">${escapeHtml(label)}</div>
+            <div class="kpi-value">${escapeHtml(value)}</div>
+            <div class="kpi-sub">${escapeHtml(sub)}</div>
+          </div>
+        `).join("");
+      }
+
+      const scheduleTable = document.querySelector("#liveScheduleTable");
+      if (scheduleTable) {
+        scheduleTable.innerHTML = table(schedules, [
+          { key: "schedule_id", label: "schedule id", render: (row) => escapeHtml(row.schedule_id) },
+          { key: "work_date", label: "work date", render: (row) => escapeHtml(row.work_date) },
+          { key: "bkg_no", label: "BKG", render: (row) => escapeHtml(row.bkg_no) },
+          { key: "location_id", label: "location", render: (row) => escapeHtml(row.location_id) },
+          { key: "pol", label: "POL/POD", render: (row) => `${escapeHtml(row.pol)} / ${escapeHtml(row.pod)}` },
+          { key: "cntr_type", label: "CNTR", render: (row) => escapeHtml(row.cntr_type) },
+          { key: "flexibag_qty", label: "qty", render: (row) => `${Number(row.flexibag_qty || 0)} EA` },
+          { key: "status", label: "status", render: (row) => badge(row.status) }
+        ]);
+      }
+
+      const emailTable = document.querySelector("#liveEmailTable");
+      if (emailTable) {
+        emailTable.innerHTML = table(emails, [
+          { key: "received_at", label: "received", render: (row) => escapeHtml(row.received_at) },
+          { key: "from_email", label: "from", render: (row) => escapeHtml(row.from_email) },
+          { key: "subject", label: "subject", render: (row) => escapeHtml(row.subject) },
+          { key: "parse_confidence", label: "confidence", render: (row) => badge(row.parse_confidence) },
+          { key: "status", label: "status", render: (row) => badge(row.status) }
+        ]);
+      }
+    }
+
+    function renderDashboard() {
+      const targetDate = document.querySelector("#targetDate").value || "2026-06-19";
+      const alerts = trackingLocations().map((row) => reorderRecommendation(row.location_id, targetDate)).filter((row) => row.status !== "정상");
+      const pending = state.schedules.filter((row) => row.status === "PENDING_CONFIRMATION").length;
+      const correctionCount = state.photos.filter((row) => row.ocr_serial && row.confirmed_serial && normalizeSerial(row.ocr_serial) !== normalizeSerial(row.confirmed_serial)).length;
+      const excelUsed = state.inventory.filter((row) => row.source === "Order_List_2026-06.xlsx" && row.status === "USED").length;
+      const uls24Stock = actualStock("ULS", "24KL");
+      const totalUsed = state.inventory.filter((row) => row.status === "USED").length;
+      const yardAlert = document.querySelector("#yardAlert");
+      if (yardAlert) {
+        const alertLabel = alerts.length ? `${alerts.length} ALERT` : "NORMAL";
+        const alertClass = alerts.length ? "warn" : "ok";
+        yardAlert.innerHTML = `
+          <span class="pulse"></span>
+          <div>
+            <strong>SMART YARD CONTROL</strong>
+            <span>Ulsan 24KL ORDER physical stock ${uls24Stock.toLocaleString()} EA · USED history ${totalUsed.toLocaleString()} EA · Excel offset ${excelUsed.toLocaleString()} rows</span>
+          </div>
+          <div class="badge ${alertClass}">${alertLabel}</div>
+        `;
+      }
+      const kpis = [
+        ["총 실제 재고", `${actualStock()} EA`, "시리얼 원장 IN_STOCK 집계"],
+        ["총 예정 사용량", `${plannedUsage(null, targetDate)} EA`, "CONFIRMED 일정만 포함"],
+        ["재고 자산가치", `$${totalAssetValue().toLocaleString()}`, "IN_STOCK × 거점 단가"],
+        ["재주문 필요 거점", `${alerts.length} 곳`, "예상 재고 <= 재주문점"],
+        ["엑셀 USED 이력", `${excelUsed.toLocaleString()} EA`, "Order_List_2026-06.xlsx 반영"],
+        ["OCR 보정 건수", `${correctionCount} 건`, "OCR 원본과 확인값 불일치"],
+        ["확인 대기 일정", `${pending} 건`, "PENDING_CONFIRMATION"],
+        ["오늘 기준일", targetDate, "오늘 날짜 자동 적용"]
+      ];
+      document.querySelector("#kpiGrid").innerHTML = kpis.map(([label, value, sub]) => `
+        <div class="card tight">
+          <div class="kpi-label">${label}</div>
+          <div class="kpi-value">${value}</div>
+          <div class="kpi-sub">${sub}</div>
+        </div>
+      `).join("");
+
+      document.querySelector("#locationGrid").innerHTML = trackingLocations().map((location) => {
+        const recommendation = reorderRecommendation(location.location_id, targetDate);
+        const actual = actualStock(location.location_id);
+        const planned = plannedUsage(location.location_id, targetDate);
+        return `
+          <div class="card location-card">
+            <h3>${location.location_name} <span>${badge(recommendation.status)}</span></h3>
+            <div class="metric-pair">
+              <div class="mini-metric"><span>현재 실제 재고</span><strong>${actual} EA</strong></div>
+              <div class="mini-metric"><span>기준일 예상 재고</span><strong>${recommendation.forecast_stock} EA</strong></div>
+            </div>
+            <div class="metric-pair">
+              <div class="mini-metric"><span>예정 사용량</span><strong>${planned} EA</strong></div>
+              <div class="mini-metric"><span>권장 발주</span><strong>${recommendation.recommended_order_qty} EA</strong></div>
+            </div>
+            <div class="kpi-sub">사이즈 재고: ${sizeMix(location.location_id)}</div>
+            <div class="kpi-sub">재주문점 ${location.reorder_point} / 목표 재고 ${location.target_level}</div>
+          </div>
+        `;
+      }).join("");
+
+      renderProjectionControls();
+      renderProjection();
+      renderLocationMap();
+    }
+
+    let leafletMap = null;
+    let leafletMapLayers = [];
+
+    function renderLocationMap() {
+      if (typeof L === "undefined") return;
+      const container = document.querySelector("#locationMap");
+      if (!container) return;
+      const targetDate = document.querySelector("#targetDate").value || todayIso();
+
+      if (!leafletMap) {
+        leafletMap = L.map(container, { scrollWheelZoom: false }).setView([36.4, 127.8], 6.6);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution: "&copy; OpenStreetMap contributors",
+          maxZoom: 18
+        }).addTo(leafletMap);
+      }
+
+      leafletMapLayers.forEach((layer) => leafletMap.removeLayer(layer));
+      leafletMapLayers = [];
+
+      trackingLocations().filter((location) => location.lat && location.lon).forEach((location) => {
+        const qty = actualStock(location.location_id);
+        const recommendation = reorderRecommendation(location.location_id, targetDate);
+        const color = recommendation.status === "정상" ? "#16a34a" : recommendation.status === "주문 권장" ? "#f59e0b" : "#dc2626";
+        const radius = Math.max(12, Math.min(36, 12 + qty / 12));
+
+        const circle = L.circleMarker([location.lat, location.lon], {
+          radius,
+          color,
+          fillColor: color,
+          fillOpacity: 0.5,
+          weight: 2
+        }).addTo(leafletMap);
+        circle.bindPopup(`
+          <strong>${location.location_name} (${location.location_id})</strong><br/>
+          실제 재고: ${qty} EA<br/>
+          재주문점 ${location.reorder_point} / 목표 재고 ${location.target_level}<br/>
+          상태: ${recommendation.status}<br/>
+          사이즈: ${sizeMix(location.location_id)}
+        `);
+        leafletMapLayers.push(circle);
+
+        const label = L.marker([location.lat, location.lon], {
+          icon: L.divIcon({
+            className: "map-qty-label",
+            html: `${location.location_name} ${qty}EA`,
+            iconSize: [0, 0]
+          }),
+          interactive: false
+        }).addTo(leafletMap);
+        leafletMapLayers.push(label);
+      });
+
+      setTimeout(() => leafletMap && leafletMap.invalidateSize(), 0);
+    }
+
+    function renderProjectionControls() {
+      const select = document.querySelector("#projectionLocation");
+      const current = select.value || "ULS";
+      select.innerHTML = trackingLocations().map((row) => `<option value="${row.location_id}">${row.location_name} (${row.location_id})</option>`).join("");
+      select.value = trackingLocations().some((row) => row.location_id === current) ? current : "ULS";
+    }
+
+    function renderProjection() {
+      const locationId = document.querySelector("#projectionLocation").value || "ULS";
+      const days = Number(document.querySelector("#projectionDays")?.value || 30);
+      const rows = projectionRows(locationId, days);
+      const last = rows[rows.length - 1] || {};
+      const totalExpected = Math.round(rows.reduce((sum, row, i) => sum + (i > 0 ? Number(row.expected_usage || 0) : 0), 0));
+      const avgDaily = Math.round((totalExpected / Math.max(days, 1)) * 10) / 10;
+      const location = locationById(locationId);
+      const recommendedOrder = Math.max(location.target_level - Number(last.forecast_stock || 0), 0);
+
+      const title = document.querySelector("#projectionTitle");
+      if (title) title.textContent = `${days}일 예상 재고`;
+      drawChart(rows);
+
+      const summary = document.querySelector("#projectionSummary");
+      if (summary) {
+        summary.innerHTML = `
+          <div class="card tight"><div class="kpi-label">예측 일 평균 소요량</div><div class="kpi-value">${avgDaily} EA/일</div><div class="kpi-sub">과거 180일 가중 이동평균</div></div>
+          <div class="card tight"><div class="kpi-label">향후 ${days}일 예상 필요 수량</div><div class="kpi-value">${totalExpected} EA</div><div class="kpi-sub">확정 일정 + 시계열 예측</div></div>
+          <div class="card tight"><div class="kpi-label">${days}일 후 예상 재고</div><div class="kpi-value">${Number(last.forecast_stock || 0)} EA</div><div class="kpi-sub">현재고 ${actualStock(locationId)} EA 기준</div></div>
+          <div class="card tight"><div class="kpi-label">목표 재고 충족 권장 주문</div><div class="kpi-value">${recommendedOrder} EA</div><div class="kpi-sub">목표 ${location.target_level} EA 기준</div></div>
+        `;
+      }
+
+      let usageRows = rows.filter((row, i) => i > 0 && (Number(row.planned_usage || 0) > 0 || Number(row.expected_usage || 0) > 0));
+      const search = (document.querySelector("#projectionTableSearch")?.value || "").trim();
+      if (search) usageRows = usageRows.filter((row) => row.date.includes(search));
+      const limit = Number(document.querySelector("#projectionTableLimit")?.value ?? 7);
+      const totalMatched = usageRows.length;
+      if (limit > 0) usageRows = usageRows.slice(0, limit);
+      document.querySelector("#projectionTable").innerHTML = table(usageRows, [
+        { key: "date", label: "날짜" },
+        { key: "planned_usage", label: "확정 소요(EA)" },
+        { key: "expected_usage", label: "예상 필요(EA)" },
+        { key: "forecast_stock", label: "예측 재고(EA)" }
+      ], search ? `"${search}"에 해당하는 날짜가 없습니다.` : `${days}일 내 예상 필요 수량이 있는 날짜가 없습니다.`)
+        + (limit > 0 && totalMatched > usageRows.length
+            ? `<div class="hint" style="margin-top:6px; color:#617086; font-size:12px;">전체 ${totalMatched}일 중 ${usageRows.length}일 표시 — 더 보려면 표시 개수를 늘리거나 날짜를 검색하세요.</div>`
+            : "");
+    }
+
+    function drawChart(rows) {
+      const seriesValues = rows.flatMap((row) => [row.projected_stock, row.forecast_stock]);
+      const reorder = locationById(document.querySelector("#projectionLocation").value || "ULS").reorder_point;
+      const max = Math.max(...seriesValues, reorder, 1);
+      const min = Math.min(...seriesValues, 0);
+      const width = 760;
+      const height = 220;
+      const padL = 46;   // y축 수량 라벨 공간
+      const padR = 18;
+      const padT = 28;   // 범례 공간
+      const padB = 34;   // x축 날짜 라벨 공간
+      const plotW = width - padL - padR;
+      const plotH = height - padT - padB;
+      const xAt = (index) => padL + (index / Math.max(rows.length - 1, 1)) * plotW;
+      const yAt = (value) => padT + plotH - ((value - min) / Math.max(max - min, 1)) * plotH;
+
+      const lineFor = (key) => rows.map((row, index) => `${xAt(index)},${yAt(row[key])}`).join(" ");
+      const confirmedPts = lineFor("projected_stock");
+      const forecastPts = lineFor("forecast_stock");
+
+      // y축 눈금 (수량) - 5단계
+      const yTicks = [];
+      const tickCount = 4;
+      for (let t = 0; t <= tickCount; t += 1) {
+        const value = Math.round(min + ((max - min) * t) / tickCount);
+        const y = yAt(value);
+        yTicks.push(`
+          <line x1="${padL}" y1="${y}" x2="${width - padR}" y2="${y}" stroke="#eef1f5" />
+          <text x="${padL - 8}" y="${y + 4}" fill="#8a94a3" font-size="11" text-anchor="end">${value}</text>
+        `);
+      }
+
+      // x축 눈금 (날짜) - 약 6일 간격
+      const xTicks = [];
+      const step = Math.max(Math.ceil(rows.length / 6), 1);
+      rows.forEach((row, index) => {
+        if (index % step !== 0 && index !== rows.length - 1) return;
+        const x = xAt(index);
+        const label = row.date.slice(5).replace("-", "/");
+        xTicks.push(`
+          <line x1="${x}" y1="${padT + plotH}" x2="${x}" y2="${padT + plotH + 4}" stroke="#c9d2dc" />
+          <text x="${x}" y="${padT + plotH + 18}" fill="#8a94a3" font-size="11" text-anchor="middle">${label}</text>
+        `);
+      });
+
+      const reorderY = yAt(reorder);
+
+      document.querySelector("#projectionChart").innerHTML = `
+        <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="30일 예상 재고 차트">
+          ${yTicks.join("")}
+          ${xTicks.join("")}
+          <line x1="${padL}" y1="${padT + plotH}" x2="${width - padR}" y2="${padT + plotH}" stroke="#c9d2dc" />
+          <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="#c9d2dc" />
+          <text x="${padL - 8}" y="${padT - 12}" fill="#8a94a3" font-size="11" text-anchor="end">수량</text>
+
+          <line x1="${padL}" y1="${reorderY}" x2="${width - padR}" y2="${reorderY}" stroke="#b7791f" stroke-dasharray="5 5" />
+          <text x="${width - padR - 4}" y="${Math.max(reorderY - 6, padT + 10)}" fill="#b7791f" font-size="11" text-anchor="end">재주문점 ${reorder}</text>
+
+          <polyline points="${forecastPts}" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-dasharray="6 4" stroke-linecap="round" stroke-linejoin="round" />
+          <polyline points="${confirmedPts}" fill="none" stroke="#176b5b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+          ${rows.map((row, index) => {
+            if (index % step !== 0 && index !== rows.length - 1) return "";
+            return `<circle cx="${xAt(index)}" cy="${yAt(row.forecast_stock)}" r="3.5" fill="#2563eb"><title>${row.date} 예측재고 ${row.forecast_stock} / 예상필요 ${row.expected_usage}</title></circle>`;
+          }).join("")}
+
+          <g font-size="11">
+            <rect x="${padL}" y="6" width="14" height="3" fill="#176b5b" />
+            <text x="${padL + 20}" y="11" fill="#56606d">확정 일정 기준</text>
+            <rect x="${padL + 120}" y="6" width="14" height="3" fill="#2563eb" />
+            <text x="${padL + 140}" y="11" fill="#56606d">과거 추세 예측</text>
+          </g>
+        </svg>
+      `;
+    }
+
+    function sortedSchedules() {
+      return [...state.schedules].sort((a, b) => {
+        const dateCompare = String(a.work_date || "9999-12-31").localeCompare(String(b.work_date || "9999-12-31"));
+        if (dateCompare !== 0) return dateCompare;
+        return String(a.bkg_no || a.schedule_id).localeCompare(String(b.bkg_no || b.schedule_id));
+      });
+    }
+
+    function renderSchedule() {
+      const selected = document.querySelector("input[name='schedulePick']:checked")?.value;
+      document.querySelector("#scheduleTable").innerHTML = table(sortedSchedules(), [
+        { key: "pick", label: "", render: (row) => `<input type="radio" name="schedulePick" value="${row.schedule_id}" ${row.schedule_id === selected ? "checked" : ""} ${row.status !== "PENDING_CONFIRMATION" ? "disabled" : ""}>` },
+        { key: "edit", label: "정정", render: (row) => `<button class="schedule-edit-btn" data-schedule-id="${escapeHtml(row.schedule_id)}">정정</button>` },
+        { key: "schedule_id", label: "schedule id", render: (row) => escapeHtml(row.schedule_id) },
+        { key: "work_date", label: "work date", render: (row) => escapeHtml(row.work_date) },
+        { key: "bkg_no", label: "BKG", render: (row) => escapeHtml(row.bkg_no) },
+        { key: "location_id", label: "location", render: (row) => `${escapeHtml(row.location_id)} ${row.location_id ? `(${escapeHtml(locationById(row.location_id)?.location_name || "")})` : ""}` },
+        { key: "pol", label: "POL/POD", render: (row) => `${escapeHtml(row.pol)} / ${escapeHtml(row.pod)}` },
+        { key: "item", label: "item", render: (row) => escapeHtml(row.item) },
+        { key: "flexibag_size", label: "size", render: (row) => escapeHtml(row.flexibag_size || defaultFlexibagSize) },
+        { key: "flexibag_qty", label: "qty", render: (row) => `${Number(row.flexibag_qty || 0)} EA` },
+        { key: "status", label: "status", render: (row) => badge(row.status) },
+        { key: "confirmed_by", label: "confirmed by", render: (row) => escapeHtml(row.confirmed_by || "") }
+      ]);
+    }
+
+    function renderScheduleEditOptions() {
+      const locationSelect = document.querySelector("#editScheduleLocation");
+      const currentLocation = locationSelect.value;
+      locationSelect.innerHTML = state.locations
+        .filter((row) => row.stock_tracking !== false)
+        .map((row) => `<option value="${row.location_id}">${row.location_name} (${row.location_id})</option>`)
+        .join("");
+      locationSelect.value = state.locations.some((row) => row.location_id === currentLocation) ? currentLocation : "ULS";
+
+      const sizeSelect = document.querySelector("#editFlexibagSize");
+      const currentSize = sizeSelect.value;
+      sizeSelect.innerHTML = inventorySizes()
+        .filter((size) => size !== "UNKNOWN")
+        .map((size) => `<option value="${size}">${size}</option>`)
+        .join("");
+      sizeSelect.value = inventorySizes().includes(currentSize) ? currentSize : defaultFlexibagSize;
+    }
+
+    function openScheduleEdit(scheduleId) {
+      const schedule = state.schedules.find((row) => row.schedule_id === scheduleId);
+      if (!schedule) return;
+      editingScheduleId = scheduleId;
+      renderScheduleEditOptions();
+      document.querySelector("#editScheduleId").value = schedule.schedule_id;
+      document.querySelector("#editWorkDate").value = schedule.work_date || todayIso();
+      document.querySelector("#editBkgNo").value = schedule.bkg_no || "";
+      document.querySelector("#editScheduleLocation").value = schedule.location_id || "ULS";
+      document.querySelector("#editPol").value = schedule.pol || "";
+      document.querySelector("#editPod").value = schedule.pod || "";
+      document.querySelector("#editItem").value = schedule.item || "";
+      document.querySelector("#editFlexibagSize").value = schedule.flexibag_size || defaultFlexibagSize;
+      document.querySelector("#editFlexibagQty").value = Number(schedule.flexibag_qty || 0);
+      document.querySelector("#editScheduleStatus").value = schedule.status || "PENDING_CONFIRMATION";
+      document.querySelector("#editScheduleNote").value = schedule.correction_note || "";
+      document.querySelector("#scheduleEditPanel").style.display = "block";
+      document.querySelector("#scheduleEditPanel").scrollIntoView?.({ block: "start", behavior: "smooth" });
+    }
+
+    function closeScheduleEdit() {
+      editingScheduleId = null;
+      document.querySelector("#scheduleEditPanel").style.display = "none";
+    }
+
+    function saveScheduleEdit() {
+      const schedule = state.schedules.find((row) => row.schedule_id === editingScheduleId);
+      if (!schedule) return;
+      const previous = {
+        work_date: schedule.work_date,
+        location_id: schedule.location_id,
+        flexibag_qty: schedule.flexibag_qty,
+        status: schedule.status
+      };
+      schedule.work_date = document.querySelector("#editWorkDate").value || todayIso();
+      schedule.bkg_no = document.querySelector("#editBkgNo").value.trim();
+      schedule.location_id = document.querySelector("#editScheduleLocation").value;
+      schedule.pol = document.querySelector("#editPol").value.trim().toUpperCase();
+      schedule.pod = document.querySelector("#editPod").value.trim().toUpperCase();
+      schedule.item = document.querySelector("#editItem").value.trim();
+      schedule.flexibag_size = document.querySelector("#editFlexibagSize").value;
+      schedule.flexibag_qty = Math.max(0, Number(document.querySelector("#editFlexibagQty").value || 0));
+      schedule.cntr_qty = schedule.flexibag_qty;
+      schedule.status = document.querySelector("#editScheduleStatus").value;
+      schedule.correction_note = document.querySelector("#editScheduleNote").value.trim();
+      schedule.corrected_by = document.querySelector("#confirmUser").value || "operator";
+      schedule.corrected_at = new Date().toLocaleString("sv-SE");
+      if (schedule.status === "CONFIRMED" && !schedule.confirmed_at) {
+        schedule.confirmed_by = schedule.corrected_by;
+        schedule.confirmed_at = schedule.corrected_at;
+      }
+      syncWorkOrderFromSchedule(schedule);
+      state.events.unshift({
+        event_id: makeId("EVT"),
+        serial_no: "",
+        event_type: "SCHEDULE_CORRECTION",
+        from_status: previous.status,
+        to_status: schedule.status,
+        location_id: schedule.location_id,
+        order_id: orderIdForSchedule(schedule),
+        photo_id: "",
+        event_time: schedule.corrected_at,
+        confirmed_by: schedule.corrected_by,
+        note: `Schedule corrected: date ${previous.work_date || "-"} -> ${schedule.work_date}, location ${previous.location_id || "-"} -> ${schedule.location_id}, qty ${previous.flexibag_qty || 0} -> ${schedule.flexibag_qty}. ${schedule.correction_note || ""}`.trim()
+      });
+      saveState();
+      closeScheduleEdit();
+      renderAll();
+    }
+
+    function renderLedgerFilters() {
+      const select = document.querySelector("#ledgerLocation");
+      const current = select.value;
+      select.innerHTML = `<option value="">전체</option>${state.locations.map((row) => `<option value="${row.location_id}">${row.location_name} (${row.location_id})</option>`).join("")}`;
+      select.value = current || "";
+      const sizeSelect = document.querySelector("#ledgerSize");
+      const currentSize = sizeSelect.value;
+      sizeSelect.innerHTML = `<option value="">전체</option>${inventorySizes().map((size) => `<option value="${size}">${size}</option>`).join("")}`;
+      sizeSelect.value = currentSize || "";
+    }
+
+    function renderLedger() {
+      renderLedgerFilters();
+      const location = document.querySelector("#ledgerLocation").value;
+      const status = document.querySelector("#ledgerStatus").value;
+      const size = document.querySelector("#ledgerSize").value;
+      const search = document.querySelector("#ledgerSearch").value.trim();
+      const rows = state.inventory.filter((row) =>
+        (!location || row.location_id === location) &&
+        (!status || row.status === status) &&
+        (!size || row.flexibag_size === size) &&
+        (!search || row.serial_no.includes(search))
+      );
+      document.querySelector("#ledgerTable").innerHTML = table(rows, [
+        { key: "serial_no", label: "serial no", render: (row) => escapeHtml(row.serial_no) },
+        { key: "location_id", label: "location", render: (row) => `${row.location_id} (${locationById(row.location_id).location_name})` },
+        { key: "flexibag_size", label: "size", render: (row) => escapeHtml(row.flexibag_size || "") },
+        { key: "status", label: "status", render: (row) => badge(row.status) },
+        { key: "intake_date", label: "intake date", render: (row) => escapeHtml(row.intake_date) },
+        { key: "used_date", label: "used date", render: (row) => escapeHtml(row.used_date) },
+        { key: "current_order_id", label: "order", render: (row) => escapeHtml(row.current_order_id) },
+        { key: "source", label: "source", render: (row) => escapeHtml(row.source || "") },
+        { key: "note", label: "note", render: (row) => escapeHtml(row.note) }
+      ]);
+    }
+
+    function materialCategories() {
+      const base = ["Valve", "Adapter", "Seal", "Packing", "Tool", "Other"];
+      const found = new Set((state.exceptionMaterials || []).map((row) => row.category || "Other"));
+      return [...base, ...[...found].filter((item) => !base.includes(item)).sort()];
+    }
+
+    function renderMaterialFilters() {
+      const locationFilter = document.querySelector("#materialFilterLocation");
+      const currentFilterLocation = locationFilter.value;
+      locationFilter.innerHTML = `<option value="">전체</option>${state.locations.map((row) => `<option value="${row.location_id}">${row.location_name} (${row.location_id})</option>`).join("")}`;
+      locationFilter.value = state.locations.some((row) => row.location_id === currentFilterLocation) ? currentFilterLocation : "";
+
+      const categoryFilter = document.querySelector("#materialFilterCategory");
+      const currentFilterCategory = categoryFilter.value;
+      categoryFilter.innerHTML = `<option value="">전체</option>${materialCategories().map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`).join("")}`;
+      categoryFilter.value = materialCategories().includes(currentFilterCategory) ? currentFilterCategory : "";
+
+      const formLocation = document.querySelector("#materialLocation");
+      const currentFormLocation = formLocation.value;
+      formLocation.innerHTML = state.locations.map((row) => `<option value="${row.location_id}">${row.location_name} (${row.location_id})</option>`).join("");
+      formLocation.value = state.locations.some((row) => row.location_id === currentFormLocation) ? currentFormLocation : "ULS";
+    }
+
+    function filteredMaterialRows() {
+      const location = document.querySelector("#materialFilterLocation").value;
+      const category = document.querySelector("#materialFilterCategory").value;
+      const status = document.querySelector("#materialFilterStatus").value;
+      return [...(state.exceptionMaterials || [])]
+        .filter((row) =>
+          (!location || row.location_id === location) &&
+          (!category || row.category === category) &&
+          (!status || row.status === status)
+        )
+        .sort((a, b) => String(a.location_id || "").localeCompare(String(b.location_id || "")) || String(a.material_name || "").localeCompare(String(b.material_name || "")));
+    }
+
+    function renderMaterialKpis(rows) {
+      const totalQty = rows.reduce((sum, row) => sum + Number(row.qty_on_hand || 0), 0);
+      const exceptionCount = rows.filter((row) => row.status !== "AVAILABLE").length;
+      const locations = new Set(rows.map((row) => row.location_id)).size;
+      document.querySelector("#materialKpiGrid").innerHTML = [
+        ["관리 품목", `${rows.length} SKU`, "예외 부자재 원장 기준"],
+        ["보관 수량", `${totalQty} EA`, "선택 필터 합계"],
+        ["예외/보류", `${exceptionCount} SKU`, "RESERVED / QUARANTINE 등"],
+        ["보관 거점", `${locations} 곳`, "현재 필터 기준"]
+      ].map(([label, value, sub]) => `
+        <div class="card tight">
+          <div class="kpi-label">${label}</div>
+          <div class="kpi-value">${value}</div>
+          <div class="kpi-sub">${sub}</div>
+        </div>
+      `).join("");
+    }
+
+    function renderMaterials() {
+      renderMaterialFilters();
+      const rows = filteredMaterialRows();
+      renderMaterialKpis(rows);
+      document.querySelector("#materialTable").innerHTML = table(rows, [
+        { key: "edit", label: "정정", render: (row) => `<button class="material-edit-btn" data-material-id="${escapeHtml(row.material_id)}">선택</button>` },
+        { key: "material_id", label: "관리번호", render: (row) => escapeHtml(row.material_id) },
+        { key: "material_name", label: "부자재명", render: (row) => escapeHtml(row.material_name) },
+        { key: "category", label: "분류", render: (row) => escapeHtml(row.category) },
+        { key: "location_id", label: "거점", render: (row) => `${escapeHtml(row.location_id)} (${escapeHtml(locationById(row.location_id)?.location_name || "")})` },
+        { key: "storage_place", label: "보관 위치", render: (row) => escapeHtml(row.storage_place) },
+        { key: "qty_on_hand", label: "수량", render: (row) => `${Number(row.qty_on_hand || 0)} ${escapeHtml(row.unit || "EA")}` },
+        { key: "status", label: "상태", render: (row) => badge(row.status) },
+        { key: "last_checked", label: "확인일", render: (row) => escapeHtml(row.last_checked || "") },
+        { key: "note", label: "메모", render: (row) => escapeHtml(row.note || "") }
+      ], "관리 중인 예외 부자재가 없습니다.");
+
+      document.querySelectorAll(".material-edit-btn").forEach((button) => {
+        button.addEventListener("click", () => fillMaterialForm(button.dataset.materialId));
+      });
+
+      document.querySelector("#materialEventTable").innerHTML = table((state.materialEvents || []).slice(0, 40), [
+        { key: "event_time", label: "시간", render: (row) => escapeHtml(row.event_time) },
+        { key: "material_id", label: "관리번호", render: (row) => escapeHtml(row.material_id) },
+        { key: "event_type", label: "구분", render: (row) => badge(row.event_type) },
+        { key: "qty", label: "수량", render: (row) => `${Number(row.qty || 0)} ${escapeHtml(row.unit || "EA")}` },
+        { key: "from_qty", label: "이전", render: (row) => Number(row.from_qty || 0) },
+        { key: "to_qty", label: "이후", render: (row) => Number(row.to_qty || 0) },
+        { key: "location_id", label: "거점", render: (row) => escapeHtml(row.location_id || "") },
+        { key: "confirmed_by", label: "확인자", render: (row) => escapeHtml(row.confirmed_by || "") },
+        { key: "note", label: "메모", render: (row) => escapeHtml(row.note || "") }
+      ], "아직 부자재 입출고 이력이 없습니다.");
+    }
+
+    function materialById(materialId) {
+      return (state.exceptionMaterials || []).find((row) => row.material_id === materialId);
+    }
+
+    function fillMaterialForm(materialId) {
+      const material = materialById(materialId);
+      if (!material) return;
+      document.querySelector("#materialId").value = material.material_id;
+      document.querySelector("#materialName").value = material.material_name || "";
+      document.querySelector("#materialCategory").value = material.category || "Other";
+      document.querySelector("#materialLocation").value = material.location_id || "ULS";
+      document.querySelector("#materialStorage").value = material.storage_place || "";
+      document.querySelector("#materialQty").value = Number(material.qty_on_hand || 0);
+      document.querySelector("#materialUnit").value = material.unit || "EA";
+      document.querySelector("#materialStatus").value = material.status || "AVAILABLE";
+      document.querySelector("#materialNote").value = material.note || "";
+      document.querySelector("#materialMoveQty").value = 1;
+      document.querySelector("#materialMoveNote").value = "";
+    }
+
+    function clearMaterialForm() {
+      document.querySelector("#materialId").value = "";
+      document.querySelector("#materialName").value = "";
+      document.querySelector("#materialCategory").value = "Other";
+      document.querySelector("#materialLocation").value = "ULS";
+      document.querySelector("#materialStorage").value = "";
+      document.querySelector("#materialQty").value = 0;
+      document.querySelector("#materialUnit").value = "EA";
+      document.querySelector("#materialStatus").value = "AVAILABLE";
+      document.querySelector("#materialBy").value = "operator";
+      document.querySelector("#materialNote").value = "";
+      document.querySelector("#materialMoveType").value = "IN";
+      document.querySelector("#materialMoveQty").value = 1;
+      document.querySelector("#materialMoveNote").value = "";
+    }
+
+    function saveMaterialMaster() {
+      const name = document.querySelector("#materialName").value.trim();
+      if (!name) {
+        alert("부자재명을 입력하세요.");
+        return null;
+      }
+      const materialId = document.querySelector("#materialId").value.trim() || makeMaterialId(name);
+      let material = materialById(materialId);
+      const beforeQty = material ? Number(material.qty_on_hand || 0) : 0;
+      if (!material) {
+        material = { material_id: materialId };
+        state.exceptionMaterials.unshift(material);
+      }
+      material.material_name = name;
+      material.category = document.querySelector("#materialCategory").value.trim() || "Other";
+      material.location_id = document.querySelector("#materialLocation").value || "ETC";
+      material.storage_place = document.querySelector("#materialStorage").value.trim();
+      material.qty_on_hand = Math.max(0, Number(document.querySelector("#materialQty").value || 0));
+      material.unit = document.querySelector("#materialUnit").value.trim() || "EA";
+      material.status = document.querySelector("#materialStatus").value || "AVAILABLE";
+      material.note = document.querySelector("#materialNote").value.trim();
+      material.last_checked = todayIso();
+      document.querySelector("#materialId").value = material.material_id;
+      if (beforeQty !== material.qty_on_hand) {
+        state.materialEvents.unshift({
+          event_id: makeId("MAT-EVT"),
+          material_id: material.material_id,
+          event_type: "ADJUST",
+          qty: Math.abs(material.qty_on_hand - beforeQty),
+          from_qty: beforeQty,
+          to_qty: material.qty_on_hand,
+          unit: material.unit,
+          location_id: material.location_id,
+          event_time: new Date().toLocaleString("sv-SE"),
+          confirmed_by: document.querySelector("#materialBy").value || "operator",
+          note: "Master quantity save"
+        });
+      }
+      saveState();
+      renderMaterials();
+      fillMaterialForm(material.material_id);
+      return material;
+    }
+
+    function applyMaterialMovement() {
+      let material = materialById(document.querySelector("#materialId").value.trim());
+      if (!material) material = saveMaterialMaster();
+      if (!material) return;
+      const moveType = document.querySelector("#materialMoveType").value;
+      const qty = Math.max(0, Number(document.querySelector("#materialMoveQty").value || 0));
+      if (qty <= 0) {
+        alert("입출고 수량을 입력하세요.");
+        return;
+      }
+      const fromQty = Number(material.qty_on_hand || 0);
+      let toQty = fromQty;
+      if (moveType === "IN") toQty = fromQty + qty;
+      if (moveType === "OUT") {
+        if (qty > fromQty) {
+          alert("출고 수량이 현재 수량보다 큽니다.");
+          return;
+        }
+        toQty = fromQty - qty;
+      }
+      if (moveType === "ADJUST") toQty = qty;
+      material.qty_on_hand = toQty;
+      material.location_id = document.querySelector("#materialLocation").value || material.location_id || "ETC";
+      material.unit = document.querySelector("#materialUnit").value.trim() || material.unit || "EA";
+      material.status = document.querySelector("#materialStatus").value || material.status || "AVAILABLE";
+      material.last_checked = todayIso();
+      state.materialEvents.unshift({
+        event_id: makeId("MAT-EVT"),
+        material_id: material.material_id,
+        event_type: moveType,
+        qty,
+        from_qty: fromQty,
+        to_qty: toQty,
+        unit: material.unit,
+        location_id: material.location_id,
+        event_time: new Date().toLocaleString("sv-SE"),
+        confirmed_by: document.querySelector("#materialBy").value || "operator",
+        note: document.querySelector("#materialMoveNote").value.trim()
+      });
+      saveState();
+      renderMaterials();
+      fillMaterialForm(material.material_id);
+    }
+
+    function renderAllListFilters() {
+      const sizeSelect = document.querySelector("#allListSize");
+      const currentSize = sizeSelect.value;
+      sizeSelect.innerHTML = `<option value="">전체</option>${inventorySizes().map((size) => `<option value="${size}">${size}</option>`).join("")}`;
+      sizeSelect.value = currentSize || "";
+
+      const locationSelect = document.querySelector("#allListLocation");
+      const currentLocation = locationSelect.value;
+      locationSelect.innerHTML = `<option value="">전체</option>${state.locations.map((row) => `<option value="${row.location_id}">${row.location_name} (${row.location_id})</option>`).join("")}`;
+      locationSelect.value = currentLocation || "";
+    }
+
+    function filteredAllListRows() {
+      const selectedSize = document.querySelector("#allListSize").value;
+      const selectedLocation = document.querySelector("#allListLocation").value;
+      const selectedStatus = document.querySelector("#allListStatus").value;
+      return state.inventory.filter((row) =>
+        (!selectedSize || row.flexibag_size === selectedSize) &&
+        (!selectedLocation || row.location_id === selectedLocation) &&
+        (!selectedStatus || row.status === selectedStatus)
+      );
+    }
+
+    function renderAllList() {
+      renderAllListFilters();
+      const selectedSize = document.querySelector("#allListSize").value;
+      const selectedLocation = document.querySelector("#allListLocation").value;
+
+      document.querySelector("#sizeGrid").innerHTML = sizeSummaryRows().map((row) => `
+        <div class="card tight">
+          <div class="kpi-label">${row.flexibag_size}</div>
+          <div class="kpi-value">${row.in_stock} EA</div>
+          <div class="kpi-sub">IN_STOCK / USED ${row.used} / 전체 시리얼 ${row.total_serials}</div>
+        </div>
+      `).join("");
+
+      const regionRows = regionSummaryRows().filter((row) =>
+        (!selectedSize || row.flexibag_size === selectedSize) &&
+        (!selectedLocation || row.location_id === selectedLocation)
+      );
+      document.querySelector("#regionListTable").innerHTML = table(regionRows, [
+        { key: "location_name", label: "지역", render: (row) => `${escapeHtml(row.location_name)} (${escapeHtml(row.location_id)})` },
+        { key: "flexibag_size", label: "사이즈", render: (row) => escapeHtml(row.flexibag_size) },
+        { key: "in_stock", label: "현재 재고", render: (row) => `${row.in_stock} EA` },
+        { key: "used", label: "USED", render: (row) => `${row.used} EA` }
+      ]);
+
+      const serialRows = filteredAllListRows();
+      document.querySelector("#allSerialTable").innerHTML = table(serialRows, [
+        { key: "serial_no", label: "시리얼", render: (row) => escapeHtml(row.serial_no) },
+        { key: "flexibag_size", label: "사이즈", render: (row) => escapeHtml(row.flexibag_size) },
+        { key: "location_id", label: "지역", render: (row) => `${escapeHtml(locationById(row.location_id).location_name)} (${escapeHtml(row.location_id)})` },
+        { key: "status", label: "상태", render: (row) => badge(row.status) },
+        { key: "intake_date", label: "입고일", render: (row) => escapeHtml(row.intake_date) },
+        { key: "used_date", label: "사용일", render: (row) => escapeHtml(row.used_date) },
+        { key: "current_order_id", label: "작업오더", render: (row) => escapeHtml(row.current_order_id) },
+        { key: "source", label: "출처", render: (row) => escapeHtml(row.source || "") },
+        { key: "note", label: "비고", render: (row) => escapeHtml(row.note || "") }
+      ]);
+    }
+
+    function csvEscape(value) {
+      const text = String(value ?? "");
+      return /[",\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+    }
+
+    function exportAllListCsv() {
+      const columns = [
+        ["serial_no", "serial_no"],
+        ["flexibag_size", "flexibag_size"],
+        ["location_id", "location_id"],
+        ["location_name", "location_name"],
+        ["status", "status"],
+        ["intake_date", "intake_date"],
+        ["used_date", "used_date"],
+        ["current_order_id", "current_order_id"],
+        ["source", "source"],
+        ["note", "note"]
+      ];
+      const rows = filteredAllListRows();
+      const header = columns.map(([, label]) => csvEscape(label)).join(",");
+      const body = rows.map((row) => columns.map(([key]) => {
+        if (key === "location_name") return csvEscape(locationById(row.location_id).location_name);
+        return csvEscape(row[key]);
+      }).join(","));
+      const csv = "\uFEFF" + [header, ...body].join("\r\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const link = document.createElement("a");
+      const date = document.querySelector("#targetDate").value || todayIso();
+      link.href = URL.createObjectURL(blob);
+      link.download = `flexibag-list-${date}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(link.href);
+    }
+
+    function renderOcrOrders() {
+      const select = document.querySelector("#ocrOrder");
+      const current = select.value;
+      const openOrders = state.workOrders.filter((row) => row.status === "OPEN" || row.status === "IN_PROGRESS");
+      select.innerHTML = openOrders.map((row) => `<option value="${row.order_id}">${row.order_id} / ${row.location_id} / ${row.flexibag_size || defaultFlexibagSize} / ${row.bkg_no}</option>`).join("");
+      select.value = openOrders.some((row) => row.order_id === current) ? current : openOrders[0]?.order_id || "";
+    }
+
+    function renderAudit() {
+      const targetDate = document.querySelector("#targetDate").value || "2026-06-19";
+      const alerts = trackingLocations().map((row) => reorderRecommendation(row.location_id, targetDate)).filter((row) => row.status !== "정상");
+      document.querySelector("#alertTable").innerHTML = table(alerts, [
+        { key: "location_name", label: "location", render: (row) => `${row.location_name} (${row.location_id})` },
+        { key: "forecast_stock", label: "forecast", render: (row) => `${row.forecast_stock} EA` },
+        { key: "reorder_point", label: "reorder point", render: (row) => `${row.reorder_point} EA` },
+        { key: "recommended_order_qty", label: "recommended", render: (row) => `${row.recommended_order_qty} EA` },
+        { key: "status", label: "status", render: (row) => badge(row.status) }
+      ], "재주문 경고가 없습니다.");
+      document.querySelector("#photoTable").innerHTML = table(state.photos, [
+        { key: "photo_id", label: "photo id", render: (row) => escapeHtml(row.photo_id) },
+        { key: "order_id", label: "order", render: (row) => escapeHtml(row.order_id) },
+        { key: "image_name", label: "file", render: (row) => escapeHtml(row.image_name || row.image_path || "") },
+        { key: "image_size", label: "size", render: (row) => row.image_size ? formatBytes(row.image_size) : "" },
+        { key: "ocr_serial", label: "ocr serial", render: (row) => escapeHtml(row.ocr_serial) },
+        { key: "confirmed_serial", label: "confirmed", render: (row) => escapeHtml(row.confirmed_serial) },
+        { key: "result", label: "result", render: (row) => badge(row.result) }
+      ]);
+      document.querySelector("#eventTable").innerHTML = table(state.events, [
+        { key: "event_time", label: "event time", render: (row) => escapeHtml(row.event_time) },
+        { key: "event_id", label: "event id", render: (row) => escapeHtml(row.event_id) },
+        { key: "serial_no", label: "serial", render: (row) => escapeHtml(row.serial_no) },
+        { key: "event_type", label: "type", render: (row) => escapeHtml(row.event_type) },
+        { key: "from_status", label: "from", render: (row) => escapeHtml(row.from_status) },
+        { key: "to_status", label: "to", render: (row) => escapeHtml(row.to_status) },
+        { key: "order_id", label: "order", render: (row) => escapeHtml(row.order_id) },
+        { key: "photo_id", label: "photo", render: (row) => escapeHtml(row.photo_id) },
+        { key: "note", label: "note", render: (row) => escapeHtml(row.note) }
+      ]);
+    }
+
+    function renderAll() {
+      renderDashboard();
+      renderLiveEmail();
+      renderSchedule();
+      renderAllList();
+      renderLedger();
+      renderMaterials();
+      renderOcrOrders();
+      renderAudit();
+    }
+
+    document.querySelectorAll(".tab").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach((item) => item.classList.remove("active"));
+        document.querySelectorAll(".view").forEach((item) => item.classList.remove("active"));
+        tab.classList.add("active");
+        document.querySelector(`#${tab.dataset.view}`).classList.add("active");
+        renderAll();
+      });
+    });
+
+    document.querySelector("#targetDate").addEventListener("change", renderAll);
+    document.querySelector("#projectionLocation").addEventListener("change", renderProjection);
+    document.querySelector("#projectionDays").addEventListener("change", renderProjection);
+    document.querySelector("#projectionTableLimit").addEventListener("change", renderProjection);
+    document.querySelector("#projectionTableSearch").addEventListener("input", renderProjection);
+    ["ledgerLocation", "ledgerStatus", "ledgerSize", "ledgerSearch"].forEach((id) => document.querySelector(`#${id}`).addEventListener("input", renderLedger));
+    ["allListSize", "allListLocation", "allListStatus"].forEach((id) => document.querySelector(`#${id}`).addEventListener("input", renderAllList));
+    ["materialFilterLocation", "materialFilterCategory", "materialFilterStatus"].forEach((id) => document.querySelector(`#${id}`).addEventListener("input", renderMaterials));
+    document.querySelector("#saveMaterial").addEventListener("click", saveMaterialMaster);
+    document.querySelector("#newMaterial").addEventListener("click", () => {
+      clearMaterialForm();
+      renderMaterials();
+    });
+    document.querySelector("#applyMaterialMovement").addEventListener("click", applyMaterialMovement);
+    document.querySelector("#exportAllListCsv").addEventListener("click", exportAllListCsv);
+
+    document.querySelector("#resetDemo").addEventListener("click", () => {
+      if (!confirm("데모 데이터를 초기 상태로 되돌릴까요?")) return;
+      localStorage.removeItem(stateKey);
+      state = initialState();
+      document.querySelector("#targetDate").value = todayIso();
+      renderAll();
+    });
+
+    document.querySelector("#syncLiveEmail").addEventListener("click", async () => {
+      const notice = document.querySelector("#liveEmailNotice");
+      notice.textContent = "Gmail 새 메일을 확인하는 중입니다.";
+      try {
+        await fetchLiveEmailState({ pollNow: true });
+        notice.textContent = "Gmail 확인 완료. 새 일정이 있으면 DB와 전체 화면에 반영되었습니다.";
+      } catch (error) {
+        liveEmailSnapshot = { ok: false, error: error.message, state: {}, schedules: [], emails: [] };
+        notice.textContent = `실시간 수신 실패: ${error.message}`;
+      }
+      renderAll();
+    });
+
+    document.querySelector("#openFullDemoFromLive").addEventListener("click", () => {
+      document.querySelector('.tab[data-view="dashboard"]').click();
+    });
+
+    document.querySelector("#loadSampleEmail").addEventListener("click", () => {
+      document.querySelector("#emailSubject").value = sampleEmail.subject;
+      document.querySelector("#emailBody").value = sampleEmail.body;
+      document.querySelector("#savePending").disabled = true;
+      document.querySelector("#parseResult").textContent = "{}";
+      document.querySelector("#parseNotice").className = "notice";
+      document.querySelector("#parseNotice").textContent = "샘플 메일을 불러왔습니다. 메일 파싱을 실행하세요.";
+    });
+
+    document.querySelector("#emailUpload").addEventListener("change", (event) => {
+      readEmailFile(event.target.files?.[0]);
+      event.target.value = "";
+    });
+
+    const emailDropZone = document.querySelector("#emailDropZone");
+    ["dragenter", "dragover"].forEach((eventName) => {
+      emailDropZone.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        emailDropZone.classList.add("active");
+      });
+    });
+    ["dragleave", "drop"].forEach((eventName) => {
+      emailDropZone.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        emailDropZone.classList.remove("active");
+      });
+    });
+    emailDropZone.addEventListener("drop", (event) => {
+      readEmailFile(event.dataTransfer?.files?.[0]);
+    });
+
+    document.querySelector("#parseEmail").addEventListener("click", async () => {
+      const subject = document.querySelector("#emailSubject").value;
+      const body = document.querySelector("#emailBody").value;
+      const button = document.querySelector("#parseEmail");
+      const notice = document.querySelector("#parseNotice");
+
+      // 1차: 정규식(rule-based) 파싱
+      let parsed = parseEmailToSchedule(subject, body);
+      parsed._engine = "regex";
+      const regexFilled = countFilledParse(parsed);
+
+      // 2차: 정규식이 필드를 놓쳤고 AI 보조가 켜져 있으면 LLM으로 빈 칸만 보완
+      const useAi = document.querySelector("#useAiParse")?.checked;
+      if (useAi && parsed.warnings.length) {
+        const original = button.textContent;
+        button.disabled = true;
+        button.textContent = "AI 보완 파싱 중...";
+        notice.className = "notice";
+        notice.textContent = `정규식으로 ${regexFilled}개 필드를 추출했습니다. 비어 있는 필드를 AI로 보완하는 중...`;
+        try {
+          const ai = await aiParseEmail(subject, body);
+          const merged = mergeAiIntoParsed(parsed, ai);
+          merged._engine = (merged._ai_filled || []).length ? "regex+ai" : "regex";
+          parsed = merged;
+        } catch (error) {
+          button.textContent = original;
+          button.disabled = false;
+          finalizeParse(parsed, regexFilled, error.message);
+          return;
+        }
+        button.textContent = original;
+        button.disabled = false;
+      }
+
+      finalizeParse(parsed, regexFilled);
+    });
+
+    document.querySelector("#savePending").addEventListener("click", () => {
+      if (!state.lastParsed) return;
+      const scheduleId = createPendingSchedule(
+        state.lastParsed,
+        document.querySelector("#emailSubject").value,
+        document.querySelector("#emailBody").value
+      );
+      document.querySelector("#parseNotice").className = "notice ok";
+      document.querySelector("#parseNotice").textContent = `PENDING 일정이 생성되었습니다: ${scheduleId}`;
+      document.querySelector("#savePending").disabled = true;
+      renderAll();
+    });
+
+    document.querySelector("#confirmSelectedSchedule").addEventListener("click", () => {
+      const selected = document.querySelector("input[name='schedulePick']:checked")?.value;
+      if (!selected) {
+        alert("확정할 PENDING 일정을 선택하세요.");
+        return;
+      }
+      const result = confirmSchedule(selected, document.querySelector("#confirmUser").value);
+      alert(result.message);
+      renderAll();
+    });
+
+    document.querySelector("#scheduleTable").addEventListener("click", (event) => {
+      const button = event.target.closest?.(".schedule-edit-btn");
+      if (!button) return;
+      openScheduleEdit(button.dataset.scheduleId);
+    });
+
+    document.querySelector("#saveScheduleEdit").addEventListener("click", saveScheduleEdit);
+    document.querySelector("#cancelScheduleEdit").addEventListener("click", closeScheduleEdit);
+
+    document.querySelector("#photoUpload").addEventListener("change", (event) => {
+      readPhotoFiles(event.target.files);
+      event.target.value = "";
+    });
+
+    const photoDropZone = document.querySelector("#photoDropZone");
+    ["dragenter", "dragover"].forEach((eventName) => {
+      photoDropZone.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        photoDropZone.classList.add("active");
+      });
+    });
+    ["dragleave", "drop"].forEach((eventName) => {
+      photoDropZone.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        photoDropZone.classList.remove("active");
+      });
+    });
+    photoDropZone.addEventListener("drop", (event) => {
+      readPhotoFiles(event.dataTransfer?.files);
+    });
+
+    document.querySelector("#checkOcrStatus").addEventListener("click", checkOcrStatus);
+    document.querySelector("#runBrowserOcr").addEventListener("click", runBrowserPhotoOcr);
+    document.querySelector("#runServerOcr").addEventListener("click", runServerPhotoOcr);
+
+    document.querySelector("#mockOcr").addEventListener("click", () => {
+      const photo = activeUploadedPhoto();
+      const result = {
+        ...extractSerialFromPhoto(document.querySelector("#photoFileName").value, document.querySelector("#ocrSerial").value),
+        file_name: photo?.file_name || document.querySelector("#photoFileName").value,
+        file_size: photo?.file_size || 0,
+        mime_type: photo?.mime_type || "",
+        source: photo ? "browser_file_upload" : "manual_file_name"
+      };
+      applyExtractedSerial(result);
+    });
+
+    document.querySelector("#confirmUsed").addEventListener("click", () => {
+      const photo = activeUploadedPhoto();
+      if (!photo) {
+        document.querySelector("#ocrNotice").className = "notice warn";
+        document.querySelector("#ocrNotice").textContent = "USED 처리 전에 사진 파일을 먼저 업로드하세요.";
+        return;
+      }
+      const result = confirmUsedSerial({
+        orderId: document.querySelector("#ocrOrder").value,
+        confirmedSerial: document.querySelector("#confirmedSerial").value,
+        confirmedBy: document.querySelector("#confirmedBy").value,
+        ocrSerial: document.querySelector("#ocrSerial").value,
+        ocrConfidence: document.querySelector("#ocrConfidence").value,
+        imagePath: `browser-upload://${photo.file_name}`,
+        imageMeta: imageMetaForAudit()
+      });
+      photo.used_result = result.result;
+      photo.used_message = result.message;
+      document.querySelector("#ocrResult").textContent = JSON.stringify(result, null, 2);
+      document.querySelector("#ocrNotice").className = result.result.startsWith("USED_OK") ? "notice ok" : "notice warn";
+      document.querySelector("#ocrNotice").textContent = `${result.result}: ${result.message}`;
+      renderPhotoPreview();
+      renderAll();
+    });
+
+    document.querySelector("#clearPhoto").addEventListener("click", clearUploadedPhoto);
+
+    document.querySelector("#tryDuplicate").addEventListener("click", () => {
+      const duplicatePhoto = {
+        id: makeId("IMG"),
+        file_name: "duplicate_test_250123120032001.jpg",
+        file_size: 128000,
+        mime_type: "image/jpeg",
+        last_modified: new Date().toLocaleString("sv-SE"),
+        read_at: new Date().toLocaleString("sv-SE"),
+        data_url: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Crect width='96' height='96' fill='%23e0f2fe'/%3E%3Ctext x='10' y='52' fill='%23075985' font-size='12'%3EDUP TEST%3C/text%3E%3C/svg%3E"
+      };
+      uploadedPhotos.push(duplicatePhoto);
+      selectUploadedPhoto(duplicatePhoto.id, false);
+      document.querySelector("#photoFileName").value = duplicatePhoto.file_name;
+      document.querySelector("#confirmedSerial").value = "250123120032001";
+      document.querySelector("#ocrSerial").value = "250123120032001";
+      const result = confirmUsedSerial({
+        orderId: document.querySelector("#ocrOrder").value,
+        confirmedSerial: "250123120032001",
+        confirmedBy: document.querySelector("#confirmedBy").value,
+        ocrSerial: "250123120032001",
+        ocrConfidence: "high",
+        imagePath: `browser-upload://${duplicatePhoto.file_name}`,
+        imageMeta: imageMetaForAudit()
+      });
+      duplicatePhoto.used_result = result.result;
+      duplicatePhoto.used_message = result.message;
+      document.querySelector("#ocrResult").textContent = JSON.stringify(result, null, 2);
+      document.querySelector("#ocrNotice").className = "notice warn";
+      document.querySelector("#ocrNotice").textContent = `${result.result}: ${result.message}`;
+      renderPhotoPreview();
+      renderAll();
+    });
+
+    document.querySelector("#emailSubject").value = sampleEmail.subject;
+    document.querySelector("#emailBody").value = sampleEmail.body;
+    document.querySelector("#targetDate").value = todayIso();
+    renderAll();
+    fetchLiveEmailState()
+      .then(renderAll)
+      .catch((error) => {
+        liveEmailSnapshot = { ok: false, error: error.message, state: {}, schedules: [], emails: [] };
+        renderLiveEmail();
+      });
+    setInterval(() => {
+      fetchLiveEmailState()
+        .then(renderAll)
+        .catch((error) => {
+          liveEmailSnapshot = { ok: false, error: error.message, state: {}, schedules: [], emails: [] };
+          renderLiveEmail();
+        });
+    }, 10000);
+  </script>
+</body>
+</html>
