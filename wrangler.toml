@@ -1,0 +1,5 @@
+name = "flexibag"
+type = "javascript"
+
+[env.production]
+name = "flexibag-prod"
