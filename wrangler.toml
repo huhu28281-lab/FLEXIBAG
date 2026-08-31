@@ -1,9 +1,10 @@
 name = "flexibag"
 type = "javascript"
 main = "flexibag-inventory-ai-ocr.html"
+pages_build_output_dir = "/"
 
 [build]
-command = ""
+command = "npm run build"
 cwd = ""
 
 [env.production]
