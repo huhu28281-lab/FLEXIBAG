@@ -1,5 +1,8 @@
 name = "flexibag"
 type = "javascript"
 
+[build]
+command = ""
+
 [env.production]
 name = "flexibag-prod"
