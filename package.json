@@ -4,6 +4,6 @@
   "description": "FLEXIBAG Inventory Management System with AI OCR",
   "main": "flexibag-inventory-ai-ocr.html",
   "scripts": {
-    "build": "echo 'Static site - ready to deploy'"
+    "build": "echo 'Static site ready for deployment'"
   }
 }
