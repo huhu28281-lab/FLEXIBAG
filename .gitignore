@@ -49,3 +49,6 @@ logs/
 # Node modules (if using Node.js)
 node_modules/
 npm-debug.log
+
+# Wrangler local cache
+.wrangler/
