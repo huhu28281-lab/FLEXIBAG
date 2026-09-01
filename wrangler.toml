@@ -1,8 +1,6 @@
 name = "flexibag"
-type = "javascript"
+compatibility_date = "2026-09-01"
 
-[build]
-command = ""
-
-[env.production]
-name = "flexibag-prod"
+[assets]
+directory = "./docs"
+not_found_handling = "single-page-application"
